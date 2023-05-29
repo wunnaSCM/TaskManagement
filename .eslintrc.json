@@ -1,0 +1,67 @@
+{
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "prefer-const": "error",
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "camelcase": "error",
+    "semi": "error",
+    "quotes": [
+      "warn",
+      "single"
+    ],
+    "eqeqeq": "error",
+    "curly": "error",
+    "no-magic-numbers": [
+      "warn",
+      {
+        "ignoreDefaultValues": true,
+        "ignoreArrayIndexes": true
+      }
+    ],
+    "no-implicit-globals": "error",
+    "keyword-spacing": [
+      "warn",
+      {
+        "before": true,
+        "after": true
+      }
+    ],
+    "indent": [
+      "error",
+      2
+    ],
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ],
+    "no-multiple-empty-lines": [
+      "warn",
+      {
+        "max": 1,
+        "maxEOF": 0
+      }
+    ],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react/button-has-type": "warn",
+    "react/prop-types": "warn",
+    "react/no-array-index-key": "error",
+    "react/react-in-jsx-scope": "warn",
+    "react/jsx-uses-react": "warn",
+    "react/display-name": "error",
+    "react/no-children-prop": "error",
+    "react/jsx-no-bind": "error"
+  }
+}
