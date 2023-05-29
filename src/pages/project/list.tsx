@@ -167,7 +167,7 @@ const ProjectList: NextPageWithLayout = () => {
       const newFilterList = data?.data?.filter(
         (p: Project) =>
           p.name.toLowerCase().includes(searchKW.toLowerCase()) ||
-          p.language.toLowerCase().includes(searchKW.toLowerCase())||
+          p.language.toLowerCase().includes(searchKW.toLowerCase()) ||
           p.description.toLowerCase().includes(searchKW.toLowerCase())
       );
       setPage(initialPage);
@@ -237,24 +237,37 @@ const ProjectList: NextPageWithLayout = () => {
                     </TableHead>
                     <tbody>
                       {displayList?.map((p: Project) => (
-                        <TableRow key={p.id} className={p.endDate>currentDate ? '' : 'odd:bg-red-100 even:bg-red-100'}>
+                        <TableRow
+                          key={p.id}
+                          className={
+                            p.endDate > currentDate
+                              ? ''
+                              : 'odd:bg-red-100 even:bg-red-100'
+                          }
+                        >
                           <TableCell>{p.id}</TableCell>
                           <TableCell>{p.name}</TableCell>
                           <TableCell>{p.language}</TableCell>
                           <TableCell>{p.description}</TableCell>
                           <TableCell>
-                            <div className='w-20 min-w-fit'>
+                            <div className="w-20 min-w-fit">
                               {moment(p.startDate).format('YYYY-MM-DD')}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className='w-20 min-w-fit'>
+                            <div className="w-20 min-w-fit">
                               {moment(p.endDate).format('YYYY-MM-DD')}
                             </div>
                           </TableCell>
                           {isAdmin && (
                             <TableCell>
-                              <div className="w-24 min-w-full">
+                              <div className="w-36 min-w-full">
+                                <Link
+                                  href={`/project/${p.id}`}
+                                  className="font-medium text-blue-50 mr-4 hover:underline hover:text-blue-100"
+                                >
+                                  Detail
+                                </Link>
                                 <Link
                                   href={`/project/${p.id}/edit`}
                                   className="font-medium text-green-600  hover:underline hover:text-green-800"

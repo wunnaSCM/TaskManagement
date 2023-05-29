@@ -164,3 +164,16 @@ export async function deleteProjectById(id: number): Promise<boolean> {
   const response = await Knex('projects').where({ id: id }).del();
   return response;
 }
+
+export async function getAllProjectId() {
+  const projects = await Knex.select('id')
+    .from('projects');
+
+  return projects.map((p: any) => {
+    return {
+      params: {
+        id: p.id.toString(),
+      },
+    };
+  });
+}
