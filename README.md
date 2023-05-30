@@ -36,10 +36,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 ## People
 
 The members who developed this project are :
+
 - Thiri Sein
 - Wunna
 - Zaw Htet Aung
 
-
 Design and code review by :
+
 - Myat Thiha

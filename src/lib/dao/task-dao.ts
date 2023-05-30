@@ -268,3 +268,9 @@ export async function deleteTaskById(id: number): Promise<boolean> {
   const response = await Knex('tasks').where({ id: id }).del();
   return response;
 }
+
+export async function getTaskByProjectId(id: number): Promise<Task> {
+  const mainQuery = getMainQuery();
+  const tasks = (await mainQuery.where('projects.id', id)) as object[];
+  return formatTaskObject(tasks[0]);
+}
