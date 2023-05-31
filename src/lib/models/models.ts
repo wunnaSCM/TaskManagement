@@ -77,3 +77,23 @@ export interface Notification {
   checked: boolean,
   createdAt: string;
 }
+
+export interface TaskByProject {
+  actualEndDate: string,
+  actualHour: number,
+  actualStartDate: string,
+  createdAt: string,
+  description: string,
+  employeeId: number,
+  employeeName: string,
+  estimateEndDate: string,
+  estimateHour: number,
+  estimateStartDate: string,
+  id: number,
+  projectId: number,
+  projectName: string,
+  status: number,
+  title: string,
+  updatedAt: string
+
+}

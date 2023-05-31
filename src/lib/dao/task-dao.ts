@@ -269,8 +269,12 @@ export async function deleteTaskById(id: number): Promise<boolean> {
   return response;
 }
 
-export async function getTaskByProjectId(id: number): Promise<Task> {
+export async function getTaskByProjectId(
+  ProjectId: number,
+): Promise<Task[]> {
   const mainQuery = getMainQuery();
-  const tasks = (await mainQuery.where('projects.id', id)) as object[];
-  return formatTaskObject(tasks[0]);
+  const tasks = (await mainQuery
+    .where('projects.id', ProjectId)
+  ) as Task[];
+  return tasks;
 }
