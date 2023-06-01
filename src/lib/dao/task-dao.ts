@@ -278,3 +278,13 @@ export async function getTaskByProjectId(
   ) as Task[];
   return tasks;
 }
+
+export async function getAllTaskIdAndEmployee() {
+  const employees = await Knex.join('employees', 'tasks.assignedEmployee', '=', 'employees.id')
+    .select(
+      'employees.id AS value',
+      'employees.name AS label',
+    )
+    .from('tasks');
+  return employees;
+}

@@ -44,12 +44,14 @@ export default function App() {
       return sportList;
     }
     // return filterList.filter((item) => item.status === selectedStatus);
+    console.log('sportList', sportList, selectedCategory);
     return sportList.filter((item) => item.category === selectedCategory);
   }
 
   // Avoid duplicate function calls with useMemo
   // const res = useMemo(getFilterList, [selectedStatus, filterList]);
-  var filteredList = useMemo(getFilteredList, [selectedCategory, sportList]);
+  const filteredList = useMemo(getFilteredList, [selectedCategory, sportList]);
+  console.log('filteredList', filteredList);
 
   function handleCategoryChange(event) {
     setSelectedCategory(event.target.value);
