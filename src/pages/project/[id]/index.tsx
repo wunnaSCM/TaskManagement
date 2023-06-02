@@ -10,6 +10,7 @@ import useSWR from 'swr';
 import { TaskByProject } from '@/lib/models/models';
 import { classNames } from '@/lib/helper';
 import NormalSelect, { ReactSelectOption } from '@/components/NormalSelect';
+import Link from 'next/link';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -49,7 +50,7 @@ const ProjectDetail: NextPageWithLayout = () => {
   }
 
   const res = projectById(id);
-  console.log('res', res?.project?.data?.name);
+  console.log('res', res);
   const employees = projectByGetEmployee();
   const EMPLOYEE_LIST = Object.values(employees);
   EMPLOYEE_LIST?.[0]?.unshift({ value: -1, label: 'All' });
@@ -68,26 +69,63 @@ const ProjectDetail: NextPageWithLayout = () => {
     EMPLOYEE_LIST_UPDATE?.[0] ?? { value: -1, label: 'All' }
   );
 
-  const TableHeaderDayComponent = () => {
+  const TableHeaderMonthComponent = () => {
     const start = moment(res.project?.data?.startDate);
     const end = moment(res.project?.data?.endDate);
-
     const headArr = [];
+
     for (
       let date = start.clone();
       date.isSameOrBefore(end, 'day');
       date.add(1, 'day')
     ) {
+      const endOfMonth = moment(date).endOf('month');
+      const diff = endOfMonth.diff(date, 'day');
+      date.add(diff, 'day');
       headArr.push(
-        <th key={`header-by-day${date.toISOString()}`} className="border">
-          {moment(date).format('DD')}
+        <th
+          key={`header-by-month${date.toISOString()}`}
+          className="border bg-gray-300"
+          colSpan={diff + 1}
+        >
+          {moment(date).format('YYYY-MM')}
         </th>
       );
     }
     return headArr;
   };
 
-  const TableDayComponent = ({
+  const TableHeaderDayComponent = () => {
+    const start = moment(res.project?.data?.startDate);
+    const end = moment(res.project?.data?.endDate);
+    const headArr = [];
+
+    for (
+      let date = start.clone();
+      date.isSameOrBefore(end, 'day');
+      date.add(1, 'day')
+    ) {
+      const endOfMonth = moment(date).endOf('month');
+      const diff = endOfMonth.diff(date, 'months');
+      date.add(diff, 'day');
+      headArr.push(
+        <th key={`header-by-day${date.toISOString()}`} className={classNames(
+          moment(date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD') ? 'bg-primary rounded-full border' : 'border'
+        )}>
+          {moment(date).format('DD')}
+        </th>
+      );
+    }
+    // className={classNames(
+    //   isActive
+    //     ? 'text-primary'
+    //     : 'text-gray-900 hover:text-primary',
+    //   'rounded-md px-3 py-2 text-sm font-medium'
+    // )}
+    return headArr;
+  };
+
+  const TableCellComponent = ({
     cell,
     taskEstStartDate,
     taskEstEndDate,
@@ -96,7 +134,6 @@ const ProjectDetail: NextPageWithLayout = () => {
   }) => {
     const start = moment(res.project?.data?.startDate);
     const end = moment(res.project?.data?.endDate);
-
     const headArr = [];
 
     for (
@@ -160,34 +197,86 @@ const ProjectDetail: NextPageWithLayout = () => {
   return (
     <>
       <main className="relative">
-        <div className="container mx-auto p-2.5 pt-5 max-w-screen-xl">
+        <div className="container mx-auto p-1 pt-5 max-w-screen-xl">
           <section>
-            <div>
-              <h2>{res?.project?.data?.name}</h2>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center">
-              <span className="block text-sm font-medium text-primary">
-                Employee
-              </span>
-              <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                <NormalSelect
-                  defaultValue={selectedEmployee}
-                  optionsObject={EMPLOYEE_LIST_UPDATE}
-                  onChange={onChangeEmployee}
-                />
+            <div className="flex my-5">
+              <div className='flex mr-3'>
+                <h2 className='text-base'>Name:</h2>
+                <h2 className='text-base'>{res?.project?.data?.name}</h2>
               </div>
-              <span className="block text-sm font-medium text-primary ml-5">
-                Status
-              </span>
-              <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                <NormalSelect
-                  defaultValue={selectedStatus}
-                  optionsObject={STATUS_LIST}
-                  onChange={onChangeStatus}
-                />
+              <div className='flex mr-3'>
+                <h2 className='text-base'>Language:</h2>
+                <h2 className='text-base'>{res?.project?.data?.language}</h2>
+              </div>
+              <div className='flex mr-3'>
+                <h2 className='text-base'>Description:</h2>
+                <h2 className='text-base'>{res?.project?.data?.description}</h2>
+              </div>
+              <div className='flex mr-3'>
+                <h2 className='text-base'>Start Date:</h2>
+                <h2 className='text-base'>{moment(res?.project?.data?.startDate).format('YYYY-MM-DD')}</h2>
+              </div>
+              <div className='flex mr-3'>
+                <h2 className='text-base'>End Date:</h2>
+                <h2 className='text-base'>{moment(res?.project?.data?.endDate).format('YYYY-MM-DD')}</h2>
               </div>
             </div>
-            <div className="flex mt-8">
+            <div className="flex justify-between items-center mb-3">
+              <div className='flex'>
+                <div className="block mt-2 text-sm font-medium text-primary">
+                  Employee
+                </div>
+                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <NormalSelect
+                    defaultValue={selectedEmployee}
+                    optionsObject={EMPLOYEE_LIST_UPDATE}
+                    onChange={onChangeEmployee}
+                  />
+                </div>
+                <div className="block mt-2 text-sm font-medium text-primary ml-5">
+                  Status
+                </div>
+                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <NormalSelect
+                    defaultValue={selectedStatus}
+                    optionsObject={STATUS_LIST}
+                    onChange={onChangeStatus}
+                  />
+                </div>
+                <div className="block mt-2 text-sm font-medium text-primary ml-5">
+                  Date Range
+                </div>
+                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <NormalSelect
+                    defaultValue={selectedStatus}
+                    optionsObject={STATUS_LIST}
+                    onChange={onChangeStatus}
+                  />
+                </div>
+              </div>
+              <div className=''>
+                <Link href="/task/add">
+                  <div className="flex text-white bg-primary hover:bg-primary-dark font-medium rounded-lg text-sm md:px-5 md:py-2.5 p-2.5 ml-2">
+                    <span className="hidden sm:block me-2">New Task</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                  </div>
+                </Link>
+              </div>
+            </div>
+            <div className="flex mt-8 mb-8">
               <div className="order mr-4 w-6 h-6 border-2 border-black bg-[#ffe599]"></div>
               <div>Plan</div>
               <div className="order mx-4 w-6 h-6 border-2 border-black bg-[#00FF00]"></div>
@@ -198,101 +287,202 @@ const ProjectDetail: NextPageWithLayout = () => {
               <div>Deadline</div>
               <div className="order mx-4  w-6 h-6 border-2 border-black bg-gray-300"></div>
               <div>Weekend</div>
+              <div className="order mx-4  w-6 h-6 border-2 border-black bg-primary"></div>
+              <div>Today</div>
             </div>
-            <div className="overflow-x-auto shadow-md mt-8">
-              {displayList?.length > 0 ? (
-                <table className=" border text-center text-sm divide-y divide-gray-200">
-                  <thead>
-                    <tr className="bg-gray-300">
-                      <th rowSpan={2} className="border-r">
-                        ID
-                      </th>
-                      <th rowSpan={2} className="border-r">
-                        Tasks
-                      </th>
-                      <th rowSpan={2} className="border-r">
-                        Employee
-                      </th>
-                      <th rowSpan={2} className="border-r">
-                        Status
-                      </th>
-                      <th rowSpan={2} className="border-r">
-                        Hour
-                      </th>
-                      <th colSpan={2} className="border-r border-b">
-                        Estimate
-                      </th>
-                      <th colSpan={2} className="border-r border-b">
-                        Actual
-                      </th>
-                      <th>Date</th>
-                    </tr>
-                    <tr>
-                      <th className="border-r bg-gray-300">Start</th>
-                      <th className="border-r bg-gray-300">End</th>
-                      <th className="border-r bg-gray-300">Start</th>
-                      <th className="border-r bg-gray-300">End</th>
-                      <TableHeaderDayComponent></TableHeaderDayComponent>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayList?.map((t: TaskByProject) => (
-                      <tr key={t.id}>
-                        <td className="text-center border-r border-b w-14 p-7">
-                          {t.id}
-                        </td>
-                        <td className="text-center border-r border-b w-40">
-                          {t.projectName}
-                        </td>
-                        <td className="text-center border-r border-b w-32">
-                          {t.employeeName}
-                        </td>
-                        <td className="text-center border-r border-b w-20">
-                          {t.status === 0
-                            ? 'Open'
-                            : t.status === 1
-                              ? 'In Progress'
-                              : t.status === 2
-                                ? 'Finish'
-                                : 'Close'}
-                        </td>
-                        <td className="text-center border-r border-b w-20">
-                          {t.estimateHour}
-                        </td>
-                        <td className="text-center border-r border-b w-32">
-                          {moment(t.estimateStartDate).format('YYYY-MM-DD')}
-                        </td>
-                        <td className="text-center border-r border-b w-32">
-                          {moment(t.estimateEndDate).format('YYYY-MM-DD')}
-                        </td>
-                        <td className="text-center border-r border-b w-32">
-                          {t.actualStartDate
-                            ? moment(t.actualStartDate).format('YYYY-MM-DD')
-                            : '-'}
-                        </td>
-                        <td className="text-center border-r border-b w-32">
-                          {t.actualStartDate
-                            ? moment(t.actualEndDate).format('YYYY-MM-DD')
-                            : '-'}
-                        </td>
-                        <TableDayComponent
-                          cell={t}
-                          taskEstStartDate={moment(t.estimateStartDate)}
-                          taskEstEndDate={moment(t.estimateEndDate)}
-                          taskActStartDate={moment(t.actualStartDate)}
-                          taskActEndDate={moment(t.actualEndDate)}
-                        ></TableDayComponent>
+            <div className="relative">
+              <div className="overflow-x-auto">
+                {displayList?.length > 0 ? (
+                  <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          ID
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Tasks
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Employee
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Status
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Hour
+                        </th>
+                        <th
+                          colSpan={2}
+                          className="bg-gray-300 border-r border-b"
+                        >
+                          Estimate
+                        </th>
+                        <th
+                          colSpan={2}
+                          className="bg-gray-300 border-r border-b"
+                        >
+                          Actual
+                        </th>
+                        <TableHeaderMonthComponent></TableHeaderMonthComponent>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="w-full flex justify-center p-4">
-                  <p className="font-semibold text-gray-800 mt-20">
-                    There is no data.
-                  </p>
-                </div>
-              )}
+                      <tr>
+                        <th className="border-r bg-gray-300">Start</th>
+                        <th className="border-r bg-gray-300">End</th>
+                        <th className="border-r bg-gray-300">Start</th>
+                        <th className="border-r bg-gray-300">End</th>
+                        <TableHeaderDayComponent></TableHeaderDayComponent>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayList?.map((t: TaskByProject) => (
+                        <tr key={t.id}>
+                          <td className="bg-gray-300 text-center border-r border-b w-[50px] min-w-[50px] py-2 sticky left-0">
+                            {t.id}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px] sticky left-0">
+                            {t.title}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[8px] min-w-[80px]">
+                            {t.employeeName}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[80px] min-w-[80px]">
+                            {t.status === 0
+                              ? 'Open'
+                              : t.status === 1
+                                ? 'In Progress'
+                                : t.status === 2
+                                  ? 'Finish'
+                                  : 'Close'}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[80px] min-w-[80px]">
+                            {t.estimateHour}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {moment(t.estimateStartDate).format('YYYY-MM-DD')}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {moment(t.estimateEndDate).format('YYYY-MM-DD')}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {t.actualStartDate
+                              ? moment(t.actualStartDate).format('YYYY-MM-DD')
+                              : '-'}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {t.actualStartDate
+                              ? moment(t.actualEndDate).format('YYYY-MM-DD')
+                              : '-'}
+                          </td>
+                          <TableCellComponent
+                            cell={t}
+                            taskEstStartDate={moment(t.estimateStartDate)}
+                            taskEstEndDate={moment(t.estimateEndDate)}
+                            taskActStartDate={moment(t.actualStartDate)}
+                            taskActEndDate={moment(t.actualEndDate)}
+                          ></TableCellComponent>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="w-full flex justify-center p-4">
+                    <p className="font-semibold text-gray-800 mt-20">
+                      There is no data.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="absolute top-0 left-0 z-1">
+                {displayList?.length > 0 ? (
+                  <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th
+                          rowSpan={2}
+                          className="bg-gray-300 border-r h-[66px] min-h-[66px]"
+                        >
+                          ID
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Tasks
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Employee
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Status
+                        </th>
+                        <th rowSpan={2} className="bg-gray-300 border-r">
+                          Hour
+                        </th>
+                        <th
+                          colSpan={2}
+                          className="bg-gray-300 border-r border-b"
+                        >
+                          Estimate
+                        </th>
+                        <th
+                          colSpan={2}
+                          className="bg-gray-300 border-r border-b"
+                        >
+                          Actual
+                        </th>
+                      </tr>
+                      <tr>
+                        <th className="border-r bg-gray-300">Start</th>
+                        <th className="border-r bg-gray-300">End</th>
+                        <th className="border-r bg-gray-300">Start</th>
+                        <th className="border-r bg-gray-300">End</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayList?.map((t: TaskByProject) => (
+                        <tr key={t.id}>
+                          <td className="bg-gray-300 text-center border-r border-b w-[50px] min-w-[50px] py-2 sticky left-0">
+                            {t.id}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px] sticky left-0">
+                            {t.title}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[8px] min-w-[80px]">
+                            {t.employeeName}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[80px] min-w-[80px]">
+                            {t.status === 0
+                              ? 'Open'
+                              : t.status === 1
+                                ? 'In Progress'
+                                : t.status === 2
+                                  ? 'Finish'
+                                  : 'Close'}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[80px] min-w-[80px]">
+                            {t.estimateHour}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {moment(t.estimateStartDate).format('YYYY-MM-DD')}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {moment(t.estimateEndDate).format('YYYY-MM-DD')}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {t.actualStartDate
+                              ? moment(t.actualStartDate).format('YYYY-MM-DD')
+                              : '-'}
+                          </td>
+                          <td className="bg-gray-300 text-center border-r border-b w-[100px] min-w-[100px]">
+                            {t.actualStartDate
+                              ? moment(t.actualEndDate).format('YYYY-MM-DD')
+                              : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  ''
+                )}
+              </div>
             </div>
           </section>
         </div>
