@@ -5,7 +5,7 @@ import React, { ReactElement, useMemo, useState } from 'react';
 import Layout from '@/components/Layout';
 import { NextPageWithLayout } from '../../_app';
 import { useRouter } from 'next/router';
-import moment from 'moment';
+import moment, { defineLocale, months } from 'moment';
 import useSWR from 'swr';
 import { TaskByProject } from '@/lib/models/models';
 import { classNames } from '@/lib/helper';
@@ -31,13 +31,19 @@ const DATE_RANGE_LIST = [
   { value: 4, label: '1 Year Ago' },
   { value: 5, label: '2 Years Ago' },
   { value: 6, label: '3 Years Ago' },
-];
+] as ReactSelectOption[];
 
 const ProjectDetail: NextPageWithLayout = () => {
   // Router
   const router = useRouter();
   const id = router.query.id;
+
   const [selectedStatus, setSelectedStatus] = useState(STATUS_LIST[0]);
+  const [selectedMonth, setSelectedMonth] = useState(
+    DATE_RANGE_LIST?.[0] ?? { value: 0, label: 'All' }
+  );
+  const [projectStartDate, setProjectStartDate] = useState();
+  const [projectEndDate, setProjectEndDate] = useState();
 
   const { data } = useSWR(`/api/projects/${id}/task`, fetcher);
 
@@ -45,13 +51,11 @@ const ProjectDetail: NextPageWithLayout = () => {
     const { data, error, isLoading } = useSWR(`/api/projects/${id}`, fetcher);
 
     return {
-      project: data,
+      project: data?.data,
       isLoading,
       isError: error,
     };
   }
-
-  const [projectStartDate, setProjectStartDate] = useState();
 
   function projectByGetEmployee() {
     const { data } = useSWR(`/api/projects/${id}/employees`, fetcher);
@@ -80,14 +84,48 @@ const ProjectDetail: NextPageWithLayout = () => {
     EMPLOYEE_LIST_UPDATE?.[0] ?? { value: -1, label: 'All' }
   );
 
-  const [selectedMonth, setSelectedMonth] = useState(
-    DATE_RANGE_LIST?.[0] ?? { value: 0, label: 'All' }
-  );
+  function getMonthNames(startDate, endDate) {
+    const start = moment(startDate);
+    const end = moment(endDate);
+
+    const monthNames = [];
+    while (start.isSameOrBefore(end, 'month')) {
+      monthNames.push({
+        value: Math.floor(Math.random() * 100),
+        label: start.format('MMMM'),
+      });
+      start.add(1, 'month');
+    }
+
+    return monthNames;
+  }
+
+  function getMonthRange(month) {
+    const monthObj = moment(month, 'MMMM');
+    const startDate = monthObj.clone().startOf('month');
+    const endDate = monthObj.endOf('month');
+
+    return {
+      start: startDate.format('YYYY-MM-DD'), // Format the start date as desired
+      end: endDate.format('YYYY-MM-DD'), // Format the end date as desired
+    };
+  }
+
+  const startDate = moment(res?.project?.startDate);
+  const endDate = moment(res?.project?.endDate);
+  const MONTH_LIST = getMonthNames(startDate, endDate);
+  MONTH_LIST?.unshift({ value: -1, label: 'All' });
+  // const [selectedMonth, setSelectedMonth] = useState(
+  //   MONTH_LIST?.[0] ?? { value: -1, label: 'All' }
+  // );
+  // console.log('selectMonth', selectedMonth);
 
   const TableHeaderMonthComponent = () => {
-    //const start = moment(res.project?.data.startDate);
+    // const start = selectedMonth.value === -1 ? moment(res?.project?.startDate): moment(projectStartDate);
+    // const end = selectedMonth.value === -1 ? moment(res?.project?.endDate): moment(projectEndDate);
+
     const start = moment(projectStartDate);
-    const end = moment(res.project?.data?.endDate);
+    const end = moment(res.project?.endDate);
     const headArr = [];
 
     for (
@@ -101,20 +139,23 @@ const ProjectDetail: NextPageWithLayout = () => {
       headArr.push(
         <th
           key={`header-by-month${date.toISOString()}`}
-          className="border bg-gray-300 h-[33px] min-h-[33px]"
+          className="border bg-blue-50 h-[33px] min-h-[33px]"
           colSpan={diff + 1}
         >
           {moment(date).format('YYYY-MM')}
         </th>
       );
     }
+
     return headArr;
   };
 
   const TableHeaderDayComponent = () => {
-    // const start = moment(res.project?.data?.startDate);
+    // const start = selectedMonth.value === -1 ? moment(res?.project?.startDate): moment(projectStartDate);
+    // const end = selectedMonth.value === -1 ? moment(res?.project?.endDate): moment(projectEndDate);
+
     const start = moment(projectStartDate);
-    const end = moment(res.project?.data?.endDate);
+    const end = moment(res.project?.endDate);
     const headArr = [];
 
     for (
@@ -130,14 +171,34 @@ const ProjectDetail: NextPageWithLayout = () => {
           key={`header-by-day${date.toISOString()}`}
           className={classNames(
             moment(date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')
-              ? 'bg-primary rounded-full border'
-              : 'border'
+              ? 'bg-primary rounded-full border h-[33px] min-h-[33px]'
+              : 'border h-[33px] min-h-[33px] bg-blue-50'
           )}
         >
           {moment(date).format('DD')}
         </th>
       );
     }
+
+    // const date = start.clone();
+    // while (date.isSameOrBefore(end)) {
+    //   if (date.isoWeekday() <= 5) {
+    //     headArr.push(date.clone());
+    //   }
+    //   date.add(1, 'day');
+    //   headArr.push(
+    //     <th
+    //       key={`header-by-day${date.toISOString()}`}
+    //       className={classNames(
+    //         moment(date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')
+    //           ? 'bg-primary rounded-full border h-[33px] min-h-[33px]'
+    //           : 'border h-[33px] min-h-[33px] bg-blue-50'
+    //       )}
+    //     >
+    //       {moment(date).format('DD')}
+    //     </th>
+    //   );
+    // }
     return headArr;
   };
 
@@ -148,9 +209,11 @@ const ProjectDetail: NextPageWithLayout = () => {
     taskActStartDate,
     taskActEndDate,
   }) => {
-    // const start = moment(res.project?.data?.startDate);
+    // const start = selectedMonth.value === -1 ? moment(res?.project?.startDate): moment(projectStartDate);
+    // const end = selectedMonth.value === -1 ? moment(res?.project?.endDate): moment(projectEndDate);
+
     const start = moment(projectStartDate);
-    const end = moment(res.project?.data?.endDate);
+    const end = moment(res.project?.endDate);
     const headArr = [];
 
     for (
@@ -169,7 +232,7 @@ const ProjectDetail: NextPageWithLayout = () => {
               taskEstEndDate.format('YYYY-MM-DD')
               ? 'bg-[#e06666]' // OverDue
               : 'bg-[#00FF00]' // Progress
-            : date.format('YYYY-MM-DD') >=
+            : date.format('YYYY-MM]-DD') >=
               taskEstStartDate.format('YYYY-MM-DD') &&
             date.format('YYYY-MM-DD') <= taskEstEndDate.format('YYYY-MM-DD')
               ? date.format('YYYY-MM-DD') === moment().format('YYYY-MM-DD') &&
@@ -218,7 +281,7 @@ const ProjectDetail: NextPageWithLayout = () => {
   const onChangeDateRange = (d: any) => {
     setSelectedMonth(d);
     const formattedStartDate = formatMomentToCompare(
-      res?.project?.data?.startDate || ''
+      res?.project?.startDate || ''
     );
     if (d.value === 0) {
       const CCD = moment().format('YYYYMM01'); //  20230601
@@ -228,43 +291,68 @@ const ProjectDetail: NextPageWithLayout = () => {
       if (oneMonthAgo > formattedStartDate) {
         setProjectStartDate(oneMonthAgo);
       } else {
-        setProjectStartDate(res?.project?.data?.startDate);
+        setProjectStartDate(res?.project?.startDate);
       }
     } else if (d.value === 2) {
       const threeMonthAgo = moment().subtract(3, 'months').format('YYYYMM01');
       if (threeMonthAgo > formattedStartDate) {
         setProjectStartDate(threeMonthAgo);
       } else {
-        setProjectStartDate(res?.project?.data?.startDate);
+        setProjectStartDate(res?.project?.startDate);
       }
     } else if (d.value === 3) {
       const sixMonthAgo = moment().subtract(6, 'months').format('YYYYMM01');
       if (sixMonthAgo > formattedStartDate) {
         setProjectStartDate(sixMonthAgo);
       } else {
-        setProjectStartDate(res?.project?.data?.startDate);
+        setProjectStartDate(res?.project?.startDate);
       }
     } else if (d.value === 4) {
       const oneYearAgo = moment().subtract(1, 'years').format('YYYYMM01');
       if (oneYearAgo > formattedStartDate) {
         setProjectStartDate(oneYearAgo);
       } else {
-        setProjectStartDate(res?.project?.data?.startDate);
+        setProjectStartDate(res?.project?.startDate);
       }
     } else if (d.value === 5) {
       const twoYearAgo = moment().subtract(2, 'years').format('YYYYMM01');
       if (twoYearAgo > formattedStartDate) {
         setProjectStartDate(twoYearAgo);
       } else {
-        setProjectStartDate(res?.project?.data?.startDate);
+        setProjectStartDate(res?.project?.startDate);
       }
     } else if (d.value === 6) {
-      const threeYearAgo = moment().subtract(3, 'years').format('YYYYMM01');
+      const threeYearAgo = moment().subtract(3, 'years').format('YYYYMM0');
       if (threeYearAgo > formattedStartDate) {
         setProjectStartDate(threeYearAgo);
       } else {
-        setProjectStartDate(res?.project?.data?.startDate);
+        setProjectStartDate(res?.project?.startDate);
       }
+    }
+  };
+
+  const onChangeMonth = (d: any) => {
+    setSelectedMonth(d);
+
+    if (d.value === -1) {
+      setProjectStartDate(res?.project?.startDate);
+      setProjectEndDate(res?.project?.endDate);
+    } else {
+      const totalMonths = moment.months();
+      MONTH_LIST?.map((item) => {
+        if (item.value === d.value) {
+          if (
+            totalMonths?.map((m) => {
+              if (m === d.label) {
+                const range = getMonthRange(d.label);
+                setProjectStartDate(range.start);
+                setProjectEndDate(range.end);
+              }
+            })
+          );
+        } else {
+        }
+      });
     }
   };
 
@@ -276,26 +364,26 @@ const ProjectDetail: NextPageWithLayout = () => {
             <div className="flex my-5">
               <div className="flex mr-3">
                 <h2 className="text-base">Name:</h2>
-                <h2 className="text-base">{res?.project?.data?.name}</h2>
+                <h2 className="text-base">{res?.project?.name}</h2>
               </div>
               <div className="flex mr-3">
                 <h2 className="text-base">Language:</h2>
-                <h2 className="text-base">{res?.project?.data?.language}</h2>
+                <h2 className="text-base">{res?.project?.language}</h2>
               </div>
               <div className="flex mr-3">
                 <h2 className="text-base">Description:</h2>
-                <h2 className="text-base">{res?.project?.data?.description}</h2>
+                <h2 className="text-base">{res?.project?.description}</h2>
               </div>
               <div className="flex mr-3">
                 <h2 className="text-base">Start Date:</h2>
                 <h2 className="text-base">
-                  {moment(res?.project?.data?.startDate).format('YYYY-MM-DD')}
+                  {moment(res?.project?.startDate).format('YYYY-MM-DD')}
                 </h2>
               </div>
               <div className="flex mr-3">
                 <h2 className="text-base">End Date:</h2>
                 <h2 className="text-base">
-                  {moment(res?.project?.data?.endDate).format('YYYY-MM-DD')}
+                  {moment(res?.project?.endDate).format('YYYY-MM-DD')}
                 </h2>
               </div>
             </div>
@@ -328,7 +416,9 @@ const ProjectDetail: NextPageWithLayout = () => {
                   <NormalSelect
                     defaultValue={selectedMonth}
                     optionsObject={DATE_RANGE_LIST}
+                    // optionsObject={MONTH_LIST}
                     onChange={onChangeDateRange}
+                    // onChange={onChangeMonth}
                   />
                 </div>
               </div>
@@ -373,57 +463,55 @@ const ProjectDetail: NextPageWithLayout = () => {
                 {displayList?.length > 0 ? (
                   <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
                     <thead>
-                      <tr>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                      <tr className="bg-gray-300">
+                        <th rowSpan={2} className="border-r">
                           ID
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Tasks
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Employee
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Status
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Hour
                         </th>
-                        <th
-                          colSpan={2}
-                          className="bg-gray-300 border-r border-b"
-                        >
+                        <th colSpan={2} className="border-r border-b">
                           Estimate
                         </th>
-                        <th
-                          colSpan={2}
-                          className="bg-gray-300 border-r border-b"
-                        >
+                        <th colSpan={2} className="border-r border-b">
                           Actual
                         </th>
                         <TableHeaderMonthComponent></TableHeaderMonthComponent>
                       </tr>
-                      <tr>
-                        <th className="border-r bg-gray-300">Start</th>
-                        <th className="border-r bg-gray-300">End</th>
-                        <th className="border-r bg-gray-300">Start</th>
-                        <th className="border-r bg-gray-300">End</th>
+                      <tr className="bg-gray-300">
+                        <th className="border-r">Start</th>
+                        <th className="border-r">End</th>
+                        <th className="border-r">Start</th>
+                        <th className="border-r">End</th>
                         <TableHeaderDayComponent></TableHeaderDayComponent>
                       </tr>
                     </thead>
                     <tbody>
                       {displayList?.map((t: TaskByProject) => (
                         <tr key={t.id}>
-                          <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 sticky left-0">
+                          <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
                             {t.id}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] sticky left-0">
-                            {t.title}
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                            {t.title?.length >= 7
+                              ? t.title.slice(0, 7) + '...'
+                              : t.title}
                           </td>
-                          <td className="text-center border-r border-b w-[8px] min-w-[80px]">
-                            {t.employeeName}
+                          <td className="text-center border-r border-b w-[8px] min-w-[80px] h-[43]px min-h-[43px]">
+                            {t.employeeName?.length >= 5
+                              ? t.employeeName.slice(0, 5) + '...'
+                              : t.employeeName}
                           </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px]">
+                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
                             {t.status === 0
                               ? 'Open'
                               : t.status === 1
@@ -432,24 +520,30 @@ const ProjectDetail: NextPageWithLayout = () => {
                                   ? 'Finish'
                                   : 'Close'}
                           </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px]">
+                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
                             {t.estimateHour}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                             {moment(t.estimateStartDate).format('YYYY-MM-DD')}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                             {moment(t.estimateEndDate).format('YYYY-MM-DD')}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
+                          <td className="text-center text-sm border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                             {t.actualStartDate
                               ? moment(t.actualStartDate).format('YYYY-MM-DD')
-                              : '-'}
+                              : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                ? 'Task is overdue'
+                                : '-'}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
-                            {t.actualStartDate
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                            {t.actualEndDate
                               ? moment(t.actualEndDate).format('YYYY-MM-DD')
-                              : '-'}
+                              : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                ? 'Task is overdue'
+                                : '-'}
                           </td>
                           <TableCellComponent
                             cell={t}
@@ -474,58 +568,60 @@ const ProjectDetail: NextPageWithLayout = () => {
                 {displayList?.length > 0 ? (
                   <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
                     <thead>
-                      <tr>
+                      <tr className="bg-blue-50">
                         <th
                           rowSpan={2}
-                          className="bg-gray-300 border-r h-[66px] min-h-[66px]"
+                          className="border-r h-[66px] min-h-[66px]"
                         >
                           ID
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Tasks
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Employee
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Status
                         </th>
-                        <th rowSpan={2} className="bg-gray-300 border-r">
+                        <th rowSpan={2} className="border-r">
                           Hour
                         </th>
-                        <th
-                          colSpan={2}
-                          className="bg-gray-300 border-r border-b"
-                        >
+                        <th colSpan={2} className="border-r border-b">
                           Estimate
                         </th>
-                        <th
-                          colSpan={2}
-                          className="bg-gray-300 border-r border-b"
-                        >
+                        <th colSpan={2} className="border-r border-b">
                           Actual
                         </th>
                       </tr>
-                      <tr>
-                        <th className="border-r bg-gray-300">Start</th>
-                        <th className="border-r bg-gray-300">End</th>
-                        <th className="border-r bg-gray-300">Start</th>
-                        <th className="border-r bg-gray-300">End</th>
+                      <tr className="bg-blue-50">
+                        <th className="border-r">Start</th>
+                        <th className="border-r">End</th>
+                        <th className="border-r">Start</th>
+                        <th className="border-r">End</th>
                       </tr>
                     </thead>
                     <tbody>
                       {displayList?.map((t: TaskByProject) => (
-                        <tr key={t.id} onClick={() => router.push(`/task/${t.id}/edit`)} className='bg-gray-300 hover:bg-primary'>
-                          <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 sticky left-0">
+                        <tr
+                          key={t.id}
+                          onClick={() => router.push(`/task/${t.id}/edit`)}
+                          className="bg-gray-300 hover:bg-primary"
+                        >
+                          <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
                             {t.id}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] sticky left-0">
-                            {t.title}
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                            {t.title?.length >= 7
+                              ? t.title.slice(0, 7) + '...'
+                              : t.title}
                           </td>
-                          <td className="text-center border-r border-b w-[8px] min-w-[80px]">
-                            {t.employeeName}
+                          <td className="text-center border-r border-b w-[8px] min-w-[80px] h-[43]px min-h-[43px]">
+                            {t.employeeName?.length >= 5
+                              ? t.employeeName.slice(0, 5) + '...'
+                              : t.employeeName}
                           </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px]">
+                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
                             {t.status === 0
                               ? 'Open'
                               : t.status === 1
@@ -534,24 +630,30 @@ const ProjectDetail: NextPageWithLayout = () => {
                                   ? 'Finish'
                                   : 'Close'}
                           </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px]">
+                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
                             {t.estimateHour}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                             {moment(t.estimateStartDate).format('YYYY-MM-DD')}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                             {moment(t.estimateEndDate).format('YYYY-MM-DD')}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
+                          <td className="text-center text-sm border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                             {t.actualStartDate
                               ? moment(t.actualStartDate).format('YYYY-MM-DD')
-                              : '-'}
+                              : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                ? 'Task is overdue'
+                                : '-'}
                           </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px]">
-                            {t.actualStartDate
+                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                            {t.actualEndDate
                               ? moment(t.actualEndDate).format('YYYY-MM-DD')
-                              : '-'}
+                              : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                ? 'Task is overdue'
+                                : '-'}
                           </td>
                         </tr>
                       ))}
