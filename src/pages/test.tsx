@@ -1,4 +1,6 @@
+import React, { useState } from 'react';
 import moment from 'moment';
+import DatePicker from 'react-datepicker';
 
 export default function Test() {
   function getWeekdaysInMonth(year, month) {
@@ -50,18 +52,35 @@ export default function Test() {
     return count;
   }
 
-  const startDate = '2023-05-18';
-  const endDate = '2023-08-16';
-  const weekdaysCount = countWeekdays(startDate, endDate);
+  // const startDate = '2023-05-18';
+  // const endDate = '2023-08-16';
+  // const weekdaysCount = countWeekdays(startDate, endDate);
 
-  console.log('Number of weekdays:', weekdaysCount);
+  // console.log('Number of weekdays:', weekdaysCount);
 
-  const year = 2023;
-  const month = 5; // Note: January is month 0, February is month 1, and so on
+  // const year = 2023;
+  // const month = 5; // Note: January is month 0, February is month 1, and so on
 
-  const weekdaysInMonth = getSaturdaysAndSundaysOfMonth(year, month);
+  // const weekdaysInMonth = getSaturdaysAndSundaysOfMonth(year, month);
 
-  weekdaysInMonth.forEach((weekday) => {
-    // console.log('test', weekday.format('YYYY-MM-DD'));
-  });
+  // weekdaysInMonth.forEach((weekday) => {
+  //   // console.log('test', weekday.format('YYYY-MM-DD'));
+  // });
+
+  const [startDate, setStartDate] = useState(1659312000000);
+  console.log('startDate', startDate);
+
+  return (
+    <div>
+      <DatePicker
+        selected={startDate}
+        onChange={(date) => setStartDate(date)}
+        dateFormat="MM/yyyy"
+        // excludeDates={[
+        //   1661990400000, 1664582400000, 1667260800000, 1672531200000,
+        // ]}
+        showMonthYearPicker
+      />
+    </div>
+  );
 }

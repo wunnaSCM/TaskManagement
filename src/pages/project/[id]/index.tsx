@@ -11,6 +11,12 @@ import { TaskByProject } from '@/lib/models/models';
 import { classNames } from '@/lib/helper';
 import NormalSelect, { ReactSelectOption } from '@/components/NormalSelect';
 import Link from 'next/link';
+import {
+  countWeekdays,
+  getMonthRange,
+} from '@/lib/dateFilter/dateFunction';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -31,11 +37,18 @@ const ProjectDetail: NextPageWithLayout = () => {
   const [selectedStatus, setSelectedStatus] = useState(STATUS_LIST[0]);
   const [projectStartDate, setProjectStartDate] = useState();
   const [projectEndDate, setProjectEndDate] = useState();
+  const [selectedMonth, setSelectedMonth] = useState();
 
   // checkbox
   const [isChecked, setIsChecked] = useState(false);
+  const [isCheckedAll, setIsCheckedAll] = useState(true);
 
   const { data } = useSWR(`/api/projects/${id}/task`, fetcher);
+
+  const { data: holidays } = useSWR(
+    'https://www.googleapis.com/calendar/v3/calendars/en.uk%23holiday%40group.v.calendar.google.com/events?key=AIzaSyCeioYHj-bOmAOVx80T8rQC-B5CY9Lt9qs',
+    fetcher
+  );
 
   function projectById(id: number) {
     const { data, error, isLoading } = useSWR(`/api/projects/${id}`, fetcher);
@@ -74,69 +87,17 @@ const ProjectDetail: NextPageWithLayout = () => {
     EMPLOYEE_LIST_UPDATE?.[0] ?? { value: -1, label: 'All' }
   );
 
-  function getMonthNames(startDate, endDate) {
-    const start = moment(startDate);
-    const end = moment(endDate);
-
-    const monthNames = [];
-    while (start.isSameOrBefore(end, 'month')) {
-      monthNames.push({
-        value: Math.floor(Math.random() * 100),
-        label: start.format('MMMM'),
-      });
-      start.add(1, 'month');
-    }
-
-    return monthNames;
-  }
-
-  function getMonthRange(month) {
-    const monthObj = moment(month, 'MMMM');
-    const startDate = monthObj.clone().startOf('month');
-    const endDate = monthObj.endOf('month');
-
-    return {
-      start: startDate.format('YYYY-MM-DD'), // Format the start date as desired
-      end: endDate.format('YYYY-MM-DD'), // Format the end date as desired
-    };
-  }
-
-  function countWeekdays(startDate, endDate) {
-    let currentDate = moment(startDate);
-    const targetDate = moment(endDate);
-    let count = 0;
-
-    while (currentDate.isSameOrBefore(targetDate)) {
-      if (currentDate.day() !== 0 && currentDate.day() !== 6) {
-        count++;
-      }
-      currentDate.add(1, 'day');
-    }
-
-    return count;
-  }
-
-  const startDate = moment(res?.project?.startDate);
-  const endDate = moment(res?.project?.endDate);
-  const MONTH_LIST = getMonthNames(startDate, endDate);
-  MONTH_LIST?.unshift({ value: -1, label: 'All' });
-  const [selectedMonth, setSelectedMonth] = useState(
-    MONTH_LIST?.[0] ?? { value: -1, label: 'All' }
-  );
-
   const checkHandler = useCallback(() => {
     setIsChecked(!isChecked);
   }, [isChecked]);
 
+  const checkAllHandler = useCallback(() => {
+    setIsCheckedAll(!isCheckedAll);
+  }, [isCheckedAll]);
+
   const TableHeaderMonthComponent = () => {
-    const start =
-      selectedMonth.value === -1
-        ? moment(res?.project?.startDate)
-        : moment(projectStartDate);
-    const end =
-      selectedMonth.value === -1
-        ? moment(res?.project?.endDate)
-        : moment(projectEndDate);
+    const start = isCheckedAll ? moment(res?.project?.startDate) : moment(projectStartDate);
+    const end = isCheckedAll ? moment(res?.project?.endDate) : moment(projectEndDate);
 
     const headArr = [];
 
@@ -152,20 +113,27 @@ const ProjectDetail: NextPageWithLayout = () => {
       );
       const diff = endOfMonth.diff(date, 'day');
       date.add(diff, 'day');
-      const item = headArr.push(
-        <th
-          key={`header-by-month${date.toISOString()}`}
-          className="border bg-blue-50 h-[33px] min-h-[33px]"
-          colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
-        >
-          {moment(date).format('YYYY-MM')}
-        </th>
-      );
       if (isChecked) {
-        item;
+        headArr.push(
+          <th
+            key={`header-by-month${date.toISOString()}`}
+            className="border bg-blue-50 h-[33px] min-h-[33px]"
+            colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
+          >
+            {moment(date).format('YYYY-MM')}
+          </th>
+        );
       } else {
         if (date.isoWeekday() <= 5) {
-          item;
+          headArr.push(
+            <th
+              key={`header-by-month${date.toISOString()}`}
+              className="border bg-blue-50 h-[33px] min-h-[33px]"
+              colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
+            >
+              {moment(date).format('YYYY-MM')}
+            </th>
+          );
         }
       }
     }
@@ -174,14 +142,8 @@ const ProjectDetail: NextPageWithLayout = () => {
   };
 
   const TableHeaderDayComponent = () => {
-    const start =
-      selectedMonth.value === -1
-        ? moment(res?.project?.startDate)
-        : moment(projectStartDate);
-    const end =
-      selectedMonth.value === -1
-        ? moment(res?.project?.endDate)
-        : moment(projectEndDate);
+    const start = isCheckedAll ? moment(res?.project?.startDate) : moment(projectStartDate);
+    const end = isCheckedAll ? moment(res?.project?.endDate) : moment(projectEndDate);
 
     const headArr = [];
 
@@ -235,14 +197,8 @@ const ProjectDetail: NextPageWithLayout = () => {
     taskActStartDate,
     taskActEndDate,
   }) => {
-    const start =
-      selectedMonth.value === -1
-        ? moment(res?.project?.startDate)
-        : moment(projectStartDate);
-    const end =
-      selectedMonth.value === -1
-        ? moment(res?.project?.endDate)
-        : moment(projectEndDate);
+    const start = isCheckedAll ? moment(res?.project?.startDate) : moment(projectStartDate);
+    const end = isCheckedAll ? moment(res?.project?.endDate) : moment(projectEndDate);
 
     const headArr = [];
 
@@ -307,37 +263,22 @@ const ProjectDetail: NextPageWithLayout = () => {
     selectedStatus?.value,
   ]);
 
-  const onChangeStatus = (e: any) => {
+  const onChangeStatus = (e: object) => {
     setSelectedStatus(e);
   };
 
-  const onChangeEmployee = (e: any) => {
+  const onChangeEmployee = (e: object) => {
     setSelectedEmployee(e);
   };
 
-  const onChangeMonth = (d: any) => {
+  const onChangeMonthUpdate = (d: object) => {
+    const month = moment(d).format('MMMM');
+    const year = moment(d).format('YYYY');
     setSelectedMonth(d);
 
-    if (d.value === -1) {
-      setProjectStartDate(res?.project?.startDate);
-      setProjectEndDate(res?.project?.endDate);
-    } else {
-      const totalMonths = moment.months();
-      MONTH_LIST?.map((item) => {
-        if (item.value === d.value) {
-          if (
-            totalMonths?.map((m) => {
-              if (m === d.label) {
-                const range = getMonthRange(d.label);
-                setProjectStartDate(range.start);
-                setProjectEndDate(range.end);
-              }
-            })
-          );
-        } else {
-        }
-      });
-    }
+    const range = getMonthRange(month, year);
+    setProjectStartDate(range.start);
+    setProjectEndDate(range.end);
   };
 
   return (
@@ -397,14 +338,23 @@ const ProjectDetail: NextPageWithLayout = () => {
                   Date Range
                 </div>
                 <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                  <NormalSelect
-                    defaultValue={selectedMonth}
-                    optionsObject={MONTH_LIST}
-                    onChange={onChangeMonth}
-                  />
+                  <div className='bg-primary w-5'>
+                    <DatePicker
+                      selected={selectedMonth}
+                      onChange={onChangeMonthUpdate}
+                      dateFormat="MM/yyyy"
+                      excludeDates={[
+                        1661990400000, 1664582400000, 1667260800000,
+                        1672531200000,
+                      ]}
+                      minDate={new Date(res?.project?.startDate)}
+                      maxDate={new Date(res?.project?.endDate)}
+                      showMonthYearPicker
+                    />
+                  </div>
                 </div>
                 <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                  <div>
+                  <div className='ml-5'>
                     <input
                       type="checkbox"
                       name="agree"
@@ -418,14 +368,23 @@ const ProjectDetail: NextPageWithLayout = () => {
                     >
                       Show Weekend
                     </label>
-                    {/* {isChecked ? (
-                      <div className="mt-2">
-                        <PasswordInput
-                          id="password"
-                          placeholder="Update employee password"
-                        />
-                      </div>
-                    ) : null} */}
+                  </div>
+                </div>
+                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <div className='ml-5'>
+                    <input
+                      type="checkbox"
+                      name="agree"
+                      id="agree"
+                      checked={isCheckedAll}
+                      onChange={checkAllHandler}
+                    />
+                    <label
+                      htmlFor="checkbox"
+                      className="ml-4 text-sm font-medium text-primary"
+                    >
+                      All Detail
+                    </label>
                   </div>
                 </div>
               </div>
