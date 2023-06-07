@@ -1,11 +1,11 @@
 /* eslint-disable no-magic-numbers */
 /* eslint-disable react/jsx-no-bind */
 /* eslint-disable react-hooks/rules-of-hooks */
-import React, { ReactElement, useMemo, useState } from 'react';
+import React, { ReactElement, useCallback, useMemo, useState } from 'react';
 import Layout from '@/components/Layout';
 import { NextPageWithLayout } from '../../_app';
 import { useRouter } from 'next/router';
-import moment, { defineLocale, months } from 'moment';
+import moment from 'moment';
 import useSWR from 'swr';
 import { TaskByProject } from '@/lib/models/models';
 import { classNames } from '@/lib/helper';
@@ -23,27 +23,17 @@ const STATUS_LIST = [
   { value: 5, label: 'Not Close' },
 ] as ReactSelectOption[];
 
-const DATE_RANGE_LIST = [
-  { value: 0, label: 'All' },
-  { value: 1, label: '1 Month Ago' },
-  { value: 2, label: '3 Months Ago' },
-  { value: 3, label: '6 Months Ago' },
-  { value: 4, label: '1 Year Ago' },
-  { value: 5, label: '2 Years Ago' },
-  { value: 6, label: '3 Years Ago' },
-] as ReactSelectOption[];
-
 const ProjectDetail: NextPageWithLayout = () => {
   // Router
   const router = useRouter();
   const id = router.query.id;
 
   const [selectedStatus, setSelectedStatus] = useState(STATUS_LIST[0]);
-  const [selectedMonth, setSelectedMonth] = useState(
-    DATE_RANGE_LIST?.[0] ?? { value: 0, label: 'All' }
-  );
   const [projectStartDate, setProjectStartDate] = useState();
   const [projectEndDate, setProjectEndDate] = useState();
+
+  // checkbox
+  const [isChecked, setIsChecked] = useState(false);
 
   const { data } = useSWR(`/api/projects/${id}/task`, fetcher);
 
@@ -111,21 +101,43 @@ const ProjectDetail: NextPageWithLayout = () => {
     };
   }
 
+  function countWeekdays(startDate, endDate) {
+    let currentDate = moment(startDate);
+    const targetDate = moment(endDate);
+    let count = 0;
+
+    while (currentDate.isSameOrBefore(targetDate)) {
+      if (currentDate.day() !== 0 && currentDate.day() !== 6) {
+        count++;
+      }
+      currentDate.add(1, 'day');
+    }
+
+    return count;
+  }
+
   const startDate = moment(res?.project?.startDate);
   const endDate = moment(res?.project?.endDate);
   const MONTH_LIST = getMonthNames(startDate, endDate);
   MONTH_LIST?.unshift({ value: -1, label: 'All' });
-  // const [selectedMonth, setSelectedMonth] = useState(
-  //   MONTH_LIST?.[0] ?? { value: -1, label: 'All' }
-  // );
-  // console.log('selectMonth', selectedMonth);
+  const [selectedMonth, setSelectedMonth] = useState(
+    MONTH_LIST?.[0] ?? { value: -1, label: 'All' }
+  );
+
+  const checkHandler = useCallback(() => {
+    setIsChecked(!isChecked);
+  }, [isChecked]);
 
   const TableHeaderMonthComponent = () => {
-    // const start = selectedMonth.value === -1 ? moment(res?.project?.startDate): moment(projectStartDate);
-    // const end = selectedMonth.value === -1 ? moment(res?.project?.endDate): moment(projectEndDate);
+    const start =
+      selectedMonth.value === -1
+        ? moment(res?.project?.startDate)
+        : moment(projectStartDate);
+    const end =
+      selectedMonth.value === -1
+        ? moment(res?.project?.endDate)
+        : moment(projectEndDate);
 
-    const start = moment(projectStartDate);
-    const end = moment(res.project?.endDate);
     const headArr = [];
 
     for (
@@ -134,28 +146,43 @@ const ProjectDetail: NextPageWithLayout = () => {
       date.add(1, 'day')
     ) {
       const endOfMonth = moment(date).endOf('month');
+      const subEndDateFromStartDate = countWeekdays(
+        date.format('YYYY-MM-DD'),
+        endOfMonth.format('YYYY-MM-DD')
+      );
       const diff = endOfMonth.diff(date, 'day');
       date.add(diff, 'day');
-      headArr.push(
+      const item = headArr.push(
         <th
           key={`header-by-month${date.toISOString()}`}
           className="border bg-blue-50 h-[33px] min-h-[33px]"
-          colSpan={diff + 1}
+          colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
         >
           {moment(date).format('YYYY-MM')}
         </th>
       );
+      if (isChecked) {
+        item;
+      } else {
+        if (date.isoWeekday() <= 5) {
+          item;
+        }
+      }
     }
 
     return headArr;
   };
 
   const TableHeaderDayComponent = () => {
-    // const start = selectedMonth.value === -1 ? moment(res?.project?.startDate): moment(projectStartDate);
-    // const end = selectedMonth.value === -1 ? moment(res?.project?.endDate): moment(projectEndDate);
+    const start =
+      selectedMonth.value === -1
+        ? moment(res?.project?.startDate)
+        : moment(projectStartDate);
+    const end =
+      selectedMonth.value === -1
+        ? moment(res?.project?.endDate)
+        : moment(projectEndDate);
 
-    const start = moment(projectStartDate);
-    const end = moment(res.project?.endDate);
     const headArr = [];
 
     for (
@@ -166,39 +193,38 @@ const ProjectDetail: NextPageWithLayout = () => {
       const endOfMonth = moment(date).endOf('month');
       const diff = endOfMonth.diff(date, 'months');
       date.add(diff, 'day');
-      headArr.push(
-        <th
-          key={`header-by-day${date.toISOString()}`}
-          className={classNames(
-            moment(date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')
-              ? 'bg-primary rounded-full border h-[33px] min-h-[33px]'
-              : 'border h-[33px] min-h-[33px] bg-blue-50'
-          )}
-        >
-          {moment(date).format('DD')}
-        </th>
-      );
+      if (isChecked) {
+        headArr.push(
+          <th
+            key={`header-by-day${date.toISOString()}`}
+            className={classNames(
+              moment(date).format('YYYY-MM-DD') ===
+                moment().format('YYYY-MM-DD')
+                ? 'bg-primary rounded-full border h-[33px] min-h-[33px]'
+                : 'border h-[33px] min-h-[33px] bg-blue-50'
+            )}
+          >
+            {moment(date).format('DD')}
+          </th>
+        );
+      } else {
+        if (date.isoWeekday() <= 5) {
+          headArr.push(
+            <th
+              key={`header-by-day${date.toISOString()}`}
+              className={classNames(
+                moment(date).format('YYYY-MM-DD') ===
+                  moment().format('YYYY-MM-DD')
+                  ? 'bg-primary rounded-full border h-[33px] min-h-[33px]'
+                  : 'border h-[33px] min-h-[33px] bg-blue-50'
+              )}
+            >
+              {moment(date).format('DD')}
+            </th>
+          );
+        }
+      }
     }
-
-    // const date = start.clone();
-    // while (date.isSameOrBefore(end)) {
-    //   if (date.isoWeekday() <= 5) {
-    //     headArr.push(date.clone());
-    //   }
-    //   date.add(1, 'day');
-    //   headArr.push(
-    //     <th
-    //       key={`header-by-day${date.toISOString()}`}
-    //       className={classNames(
-    //         moment(date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')
-    //           ? 'bg-primary rounded-full border h-[33px] min-h-[33px]'
-    //           : 'border h-[33px] min-h-[33px] bg-blue-50'
-    //       )}
-    //     >
-    //       {moment(date).format('DD')}
-    //     </th>
-    //   );
-    // }
     return headArr;
   };
 
@@ -209,11 +235,15 @@ const ProjectDetail: NextPageWithLayout = () => {
     taskActStartDate,
     taskActEndDate,
   }) => {
-    // const start = selectedMonth.value === -1 ? moment(res?.project?.startDate): moment(projectStartDate);
-    // const end = selectedMonth.value === -1 ? moment(res?.project?.endDate): moment(projectEndDate);
+    const start =
+      selectedMonth.value === -1
+        ? moment(res?.project?.startDate)
+        : moment(projectStartDate);
+    const end =
+      selectedMonth.value === -1
+        ? moment(res?.project?.endDate)
+        : moment(projectEndDate);
 
-    const start = moment(projectStartDate);
-    const end = moment(res.project?.endDate);
     const headArr = [];
 
     for (
@@ -232,7 +262,7 @@ const ProjectDetail: NextPageWithLayout = () => {
               taskEstEndDate.format('YYYY-MM-DD')
               ? 'bg-[#e06666]' // OverDue
               : 'bg-[#00FF00]' // Progress
-            : date.format('YYYY-MM]-DD') >=
+            : date.format('YYYY-MM-DD') >=
               taskEstStartDate.format('YYYY-MM-DD') &&
             date.format('YYYY-MM-DD') <= taskEstEndDate.format('YYYY-MM-DD')
               ? date.format('YYYY-MM-DD') === moment().format('YYYY-MM-DD') &&
@@ -240,12 +270,23 @@ const ProjectDetail: NextPageWithLayout = () => {
                 ? 'bg-[#A52A2A]' // Deadline
                 : 'bg-[#ffe599]' // Plan
               : '';
-      headArr.push(
-        <th
-          key={`header-by-day${date.toISOString()}`}
-          className={classNames('border h-[23px] min-h-[23px]', cellColor)}
-        ></th>
-      );
+      if (isChecked) {
+        headArr.push(
+          <th
+            key={`header-by-day${date.toISOString()}`}
+            className={classNames('border h-[23px] min-h-[23px]', cellColor)}
+          ></th>
+        );
+      } else {
+        if (date.isoWeekday() <= 5) {
+          headArr.push(
+            <th
+              key={`header-by-day${date.toISOString()}`}
+              className={classNames('border h-[23px] min-h-[23px]', cellColor)}
+            ></th>
+          );
+        }
+      }
     }
     return headArr;
   };
@@ -272,63 +313,6 @@ const ProjectDetail: NextPageWithLayout = () => {
 
   const onChangeEmployee = (e: any) => {
     setSelectedEmployee(e);
-  };
-
-  const formatMomentToCompare = (SD: string) => {
-    return moment(SD).format('YYYYMMDD');
-  };
-
-  const onChangeDateRange = (d: any) => {
-    setSelectedMonth(d);
-    const formattedStartDate = formatMomentToCompare(
-      res?.project?.startDate || ''
-    );
-    if (d.value === 0) {
-      const CCD = moment().format('YYYYMM01'); //  20230601
-      setProjectStartDate(CCD);
-    } else if (d.value === 1) {
-      const oneMonthAgo = moment().subtract(1, 'months').format('YYYYMM01');
-      if (oneMonthAgo > formattedStartDate) {
-        setProjectStartDate(oneMonthAgo);
-      } else {
-        setProjectStartDate(res?.project?.startDate);
-      }
-    } else if (d.value === 2) {
-      const threeMonthAgo = moment().subtract(3, 'months').format('YYYYMM01');
-      if (threeMonthAgo > formattedStartDate) {
-        setProjectStartDate(threeMonthAgo);
-      } else {
-        setProjectStartDate(res?.project?.startDate);
-      }
-    } else if (d.value === 3) {
-      const sixMonthAgo = moment().subtract(6, 'months').format('YYYYMM01');
-      if (sixMonthAgo > formattedStartDate) {
-        setProjectStartDate(sixMonthAgo);
-      } else {
-        setProjectStartDate(res?.project?.startDate);
-      }
-    } else if (d.value === 4) {
-      const oneYearAgo = moment().subtract(1, 'years').format('YYYYMM01');
-      if (oneYearAgo > formattedStartDate) {
-        setProjectStartDate(oneYearAgo);
-      } else {
-        setProjectStartDate(res?.project?.startDate);
-      }
-    } else if (d.value === 5) {
-      const twoYearAgo = moment().subtract(2, 'years').format('YYYYMM01');
-      if (twoYearAgo > formattedStartDate) {
-        setProjectStartDate(twoYearAgo);
-      } else {
-        setProjectStartDate(res?.project?.startDate);
-      }
-    } else if (d.value === 6) {
-      const threeYearAgo = moment().subtract(3, 'years').format('YYYYMM0');
-      if (threeYearAgo > formattedStartDate) {
-        setProjectStartDate(threeYearAgo);
-      } else {
-        setProjectStartDate(res?.project?.startDate);
-      }
-    }
   };
 
   const onChangeMonth = (d: any) => {
@@ -415,11 +399,34 @@ const ProjectDetail: NextPageWithLayout = () => {
                 <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
                   <NormalSelect
                     defaultValue={selectedMonth}
-                    optionsObject={DATE_RANGE_LIST}
-                    // optionsObject={MONTH_LIST}
-                    onChange={onChangeDateRange}
-                    // onChange={onChangeMonth}
+                    optionsObject={MONTH_LIST}
+                    onChange={onChangeMonth}
                   />
+                </div>
+                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <div>
+                    <input
+                      type="checkbox"
+                      name="agree"
+                      id="agree"
+                      checked={isChecked}
+                      onChange={checkHandler}
+                    />
+                    <label
+                      htmlFor="checkbox"
+                      className="ml-4 text-sm font-medium text-primary"
+                    >
+                      Show Weekend
+                    </label>
+                    {/* {isChecked ? (
+                      <div className="mt-2">
+                        <PasswordInput
+                          id="password"
+                          placeholder="Update employee password"
+                        />
+                      </div>
+                    ) : null} */}
+                  </div>
                 </div>
               </div>
               <div className="">
