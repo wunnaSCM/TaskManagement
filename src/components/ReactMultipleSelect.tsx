@@ -98,7 +98,6 @@ export default function ReactMultipleSelect({
       <div className="relative mt-1">
         <Controller
           name={id}
-          defaultValue={selectedValue}
           control={control}
           rules={validation}
           // eslint-disable-next-line react/jsx-no-bind

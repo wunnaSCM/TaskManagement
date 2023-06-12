@@ -143,7 +143,7 @@ export async function updateProjectById(
   name: string,
   language: string,
   description: string,
-  type: string,
+  type: any,
   startDate: string,
   endDate: string
 ): Promise<number> {
