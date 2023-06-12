@@ -13,6 +13,12 @@ import ModalDialog from '@/components/ModalDialog';
 import { useSession } from 'next-auth/react';
 import AccessDeniedPage from './AccessDeniedPage';
 import { POSITION_ADMIN } from '@/lib/constants';
+import ReactMultipleSelect from './ReactMultipleSelect';
+
+const TYPE_LIST = [
+  { value: 'app', label: 'App' },
+  { value: 'cms', label: 'CMS' },
+];
 
 export default function ProjectAddEditForm({
   editForm,
@@ -56,6 +62,11 @@ export default function ProjectAddEditForm({
     // Change Date Format
     data.startDate = moment(data.startDate).format('yyyy-MM-DD');
     data.endDate = moment(data.endDate).format('yyyy-MM-DD');
+    const result = data.type.map((item) => {
+      return item.value;
+    });
+    data.type = result.toString();
+
     try {
       if (!editForm) {
         await fetch('/api/projects', {
@@ -163,6 +174,15 @@ export default function ProjectAddEditForm({
                   placeholder="Enter description"
                   requiredField
                 />
+
+                <ReactMultipleSelect
+                  id="type"
+                  label="Type"
+                  optionsObject={TYPE_LIST}
+                  placeholder="Select Type"
+                  requiredField
+                />
+
                 <DatePicker
                   id="startDate"
                   label="Start Date"

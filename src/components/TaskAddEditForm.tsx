@@ -502,7 +502,7 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
           btnRightTitle="OK"
           btnRightOnClick={() => {
             closeUpdateModal();
-            router.push('/task/list');
+            goBack();
           }}
           // eslint-disable-next-line @typescript-eslint/no-empty-function, react/jsx-no-bind
           onClose={() => {}}

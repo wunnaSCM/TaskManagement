@@ -1,5 +1,5 @@
 /* eslint-disable no-magic-numbers */
-import { object, string } from 'yup';
+import { object, string, mixed } from 'yup';
 import { DATE_FORMAT_REGEX } from './validation-format';
 import { dateErrMsg, maxLenErrMsg, requiredErrMsg } from './validation-message';
 
@@ -11,6 +11,7 @@ export const projectServerSchema = object({
   description: string()
     .required(requiredErrMsg('Description'))
     .max(255, maxLenErrMsg(255)),
+  type: mixed().nullable(),
   startDate: string()
     .required(requiredErrMsg('Start Date'))
     .matches(DATE_FORMAT_REGEX, dateErrMsg('Start Date')),

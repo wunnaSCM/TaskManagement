@@ -4,6 +4,7 @@ exports.up = async (knex) => {
     table.string('name').notNullable();
     table.string('language').notNullable();
     table.text('description');
+    table.text('type');
     table.date('start_date');
     table.date('end_date');
     table.datetime('created_at').notNullable();

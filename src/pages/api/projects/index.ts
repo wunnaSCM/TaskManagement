@@ -38,6 +38,7 @@ const storeProjectIntoDb = async (
       project.name,
       project.language,
       project.description,
+      project.type,
       project.startDate,
       project.endDate
     );

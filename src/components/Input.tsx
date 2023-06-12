@@ -19,6 +19,7 @@ export default function Input({
   label?: string;
   placeholder?: string;
   helperText?: string;
+  selectType?: boolean;
   type?:
     | 'text'
     | 'email'
@@ -42,14 +43,14 @@ export default function Input({
   } = useFormContext();
 
   return (
-    <div className='mb-5'>
+    <div className="mb-5">
       {label && (
         <label
           htmlFor={id}
           className="block mb-2 text-sm font-medium text-primary"
         >
           {label}
-          {requiredField && <span className='text-red-400'>&nbsp;*</span>}
+          {requiredField && <span className="text-red-400">&nbsp;*</span>}
         </label>
       )}
       <div className="relative">
@@ -71,7 +72,6 @@ export default function Input({
           placeholder={placeholder}
           aria-describedby={id}
         />
-
         {errors[id] && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <ExclamationCircleIcon className="w-5 h-5 text-xl text-red-500" />

@@ -11,10 +11,7 @@ import { TaskByProject } from '@/lib/models/models';
 import { classNames } from '@/lib/helper';
 import NormalSelect, { ReactSelectOption } from '@/components/NormalSelect';
 import Link from 'next/link';
-import {
-  countWeekdays,
-  getMonthRange,
-} from '@/lib/dateFilter/dateFunction';
+import { countWeekdays, getMonthRange } from '@/lib/dateFilter/dateFunction';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -46,9 +43,30 @@ const ProjectDetail: NextPageWithLayout = () => {
   const { data } = useSWR(`/api/projects/${id}/task`, fetcher);
 
   const { data: holidays } = useSWR(
-    'https://www.googleapis.com/calendar/v3/calendars/en.uk%23holiday%40group.v.calendar.google.com/events?key=AIzaSyCeioYHj-bOmAOVx80T8rQC-B5CY9Lt9qs',
+    'https://www.googleapis.com/calendar/v3/calendars/en.mm%23holiday%40group.v.calendar.google.com/events?key=AIzaSyCeioYHj-bOmAOVx80T8rQC-B5CY9Lt9qs',
     fetcher
   );
+
+  function holiFunc() {
+    const { data, error, isLoading } = useSWR(
+      'https://www.googleapis.com/calendar/v3/calendars/en.mm%23holiday%40group.v.calendar.google.com/events?key=AIzaSyCeioYHj-bOmAOVx80T8rQC-B5CY9Lt9qs',
+      fetcher
+    );
+    return {
+      holiday: data?.items,
+      isLoading,
+      isError: error,
+    };
+  }
+  const testHoliday = holiFunc();
+  console.log('holiday', testHoliday.holiday);
+
+  const holidayArr = testHoliday?.holiday?.map((item) => {
+    // return moment(item.start.date).format('YYYY-MM-DD');
+    return item.summary;
+  });
+
+  console.log('holidayArr', holidayArr);
 
   function projectById(id: number) {
     const { data, error, isLoading } = useSWR(`/api/projects/${id}`, fetcher);
@@ -66,6 +84,10 @@ const ProjectDetail: NextPageWithLayout = () => {
     return {
       employees: data?.data,
     };
+  }
+
+  function momentFormat(date: Date) {
+    return moment(date).format('YYYY-MM-DD');
   }
 
   const res = projectById(id);
@@ -96,8 +118,12 @@ const ProjectDetail: NextPageWithLayout = () => {
   }, [isCheckedAll]);
 
   const TableHeaderMonthComponent = () => {
-    const start = isCheckedAll ? moment(res?.project?.startDate) : moment(projectStartDate);
-    const end = isCheckedAll ? moment(res?.project?.endDate) : moment(projectEndDate);
+    const start = isCheckedAll
+      ? moment(res?.project?.startDate)
+      : moment(projectStartDate);
+    const end = isCheckedAll
+      ? moment(res?.project?.endDate)
+      : moment(projectEndDate);
 
     const headArr = [];
 
@@ -142,8 +168,12 @@ const ProjectDetail: NextPageWithLayout = () => {
   };
 
   const TableHeaderDayComponent = () => {
-    const start = isCheckedAll ? moment(res?.project?.startDate) : moment(projectStartDate);
-    const end = isCheckedAll ? moment(res?.project?.endDate) : moment(projectEndDate);
+    const start = isCheckedAll
+      ? moment(res?.project?.startDate)
+      : moment(projectStartDate);
+    const end = isCheckedAll
+      ? moment(res?.project?.endDate)
+      : moment(projectEndDate);
 
     const headArr = [];
 
@@ -190,16 +220,13 @@ const ProjectDetail: NextPageWithLayout = () => {
     return headArr;
   };
 
-  const TableCellComponent = ({
-    cell,
-    taskEstStartDate,
-    taskEstEndDate,
-    taskActStartDate,
-    taskActEndDate,
-  }) => {
-    const start = isCheckedAll ? moment(res?.project?.startDate) : moment(projectStartDate);
-    const end = isCheckedAll ? moment(res?.project?.endDate) : moment(projectEndDate);
-
+  const TableCellComponent = ({ cell }) => {
+    const start = isCheckedAll
+      ? moment(res?.project?.startDate)
+      : moment(projectStartDate);
+    const end = isCheckedAll
+      ? moment(res?.project?.endDate)
+      : moment(projectEndDate);
     const headArr = [];
 
     for (
@@ -207,38 +234,74 @@ const ProjectDetail: NextPageWithLayout = () => {
       date.isSameOrBefore(end, 'day');
       date.add(1, 'day')
     ) {
-      const cellColor =
-        date.day() === 0 || date.day() === 6
-          ? 'bg-gray-300' // Weekend
-          : date.format('YYYY-MM-DD') >=
-              taskActStartDate.format('YYYY-MM-DD') &&
-            date.format('YYYY-MM-DD') <= taskActEndDate.format('YYYY-MM-DD')
-            ? date.format('YYYY-MM-DD') > taskEstEndDate.format('YYYY-MM-DD') &&
-            taskActEndDate.format('YYYY-MM-DD') >
-              taskEstEndDate.format('YYYY-MM-DD')
-              ? 'bg-[#e06666]' // OverDue
-              : 'bg-[#00FF00]' // Progress
-            : date.format('YYYY-MM-DD') >=
-              taskEstStartDate.format('YYYY-MM-DD') &&
-            date.format('YYYY-MM-DD') <= taskEstEndDate.format('YYYY-MM-DD')
+      let holidayTest = '';
+      let holidayLabel = '';
+      let weekend = '';
+      let deadlineAndPlan = '';
+      let overDueAndProgress = '';
+      testHoliday?.holiday?.map((item) => {
+        if (
+          moment(item.start.date).format('YYYY-MM-DD') ===
+          date.format('YYYY-MM-DD')
+        ) {
+          holidayTest = 'bg-gray-300';
+          holidayLabel = item.summary;
+          console.log('label', holidayLabel);
+        } else {
+          weekend = date.day() === 0 || date.day() === 6 ? 'bg-gray-300' : '';
+          overDueAndProgress =
+            momentFormat(cell.actualStartDate) &&
+            momentFormat(cell.actualEndDate) &&
+            date.format('YYYY-MM-DD') >= momentFormat(cell.actualStartDate) &&
+            (cell.actualEndDate
+              ? date.format('YYYY-MM-DD') <= momentFormat(cell.actualEndDate)
+              : date.format('YYYY-MM-DD') <= moment().format('YYYY-MM-DD'))
+              ? date.format('YYYY-MM-DD') >
+                  momentFormat(cell.estimateEndDate) &&
+                momentFormat(cell.actualEndDate) >
+                  momentFormat(cell.estimateEndDate)
+                ? 'bg-[#e06666]' // OverDue
+                : 'bg-[#00FF00]' // Progress
+              : '';
+          deadlineAndPlan =
+            !overDueAndProgress &&
+            date.format('YYYY-MM-DD') >= momentFormat(cell.estimateStartDate) &&
+            date.format('YYYY-MM-DD') <= momentFormat(cell.estimateEndDate)
               ? date.format('YYYY-MM-DD') === moment().format('YYYY-MM-DD') &&
-            date.format('YYYY-MM-DD') === taskEstEndDate.format('YYYY-MM-DD')
+                date.format('YYYY-MM-DD') === momentFormat(cell.estimateEndDate)
                 ? 'bg-[#A52A2A]' // Deadline
                 : 'bg-[#ffe599]' // Plan
               : '';
+        }
+      });
+
       if (isChecked) {
         headArr.push(
-          <th
-            key={`header-by-day${date.toISOString()}`}
-            className={classNames('border h-[23px] min-h-[23px]', cellColor)}
-          ></th>
+          <>
+            <th
+              key={`header-by-day${date.toISOString()}`}
+              className={classNames(
+                'border h-[23px] min-h-[23px]',
+                weekend,
+                overDueAndProgress,
+                deadlineAndPlan,
+                holidayTest
+              )}
+            ></th>
+          </>
         );
       } else {
         if (date.isoWeekday() <= 5) {
           headArr.push(
             <th
               key={`header-by-day${date.toISOString()}`}
-              className={classNames('border h-[23px] min-h-[23px]', cellColor)}
+              className={classNames(
+                'border h-[23px] min-h-[23px]',
+                weekend,
+                overDueAndProgress,
+                deadlineAndPlan,
+                holidayTest
+              )}
             ></th>
           );
         }
@@ -272,6 +335,7 @@ const ProjectDetail: NextPageWithLayout = () => {
   };
 
   const onChangeMonthUpdate = (d: object) => {
+    setIsCheckedAll(false);
     const month = moment(d).format('MMMM');
     const year = moment(d).format('YYYY');
     setSelectedMonth(d);
@@ -337,8 +401,8 @@ const ProjectDetail: NextPageWithLayout = () => {
                 <div className="block mt-2 text-sm font-medium text-primary ml-5">
                   Date Range
                 </div>
-                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                  <div className='bg-primary w-5'>
+                <div className="w-full mr-5 sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <div className="bg-primary w-5">
                     <DatePicker
                       selected={selectedMonth}
                       onChange={onChangeMonthUpdate}
@@ -347,6 +411,7 @@ const ProjectDetail: NextPageWithLayout = () => {
                         1661990400000, 1664582400000, 1667260800000,
                         1672531200000,
                       ]}
+                      className="border-2"
                       minDate={new Date(res?.project?.startDate)}
                       maxDate={new Date(res?.project?.endDate)}
                       showMonthYearPicker
@@ -354,7 +419,7 @@ const ProjectDetail: NextPageWithLayout = () => {
                   </div>
                 </div>
                 <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                  <div className='ml-5'>
+                  <div className="ml-5">
                     <input
                       type="checkbox"
                       name="agree"
@@ -371,7 +436,7 @@ const ProjectDetail: NextPageWithLayout = () => {
                   </div>
                 </div>
                 <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
-                  <div className='ml-5'>
+                  <div className="ml-5">
                     <input
                       type="checkbox"
                       name="agree"
@@ -423,211 +488,216 @@ const ProjectDetail: NextPageWithLayout = () => {
               <div>Weekend</div>
               <div className="order mx-4  w-6 h-6 border-2 border-black bg-primary"></div>
               <div>Today</div>
+              <div className="group flex relative">
+                <span className="bg-red-400 text-white px-2 py-1">Button</span>
+                <span
+                  className="group-hover:opacity-100 transition-opacity bg-gray-800 px-1 text-sm text-gray-100 rounded-md absolute left-1/2 
+    -translate-x-1/2 translate-y-full opacity-0 m-4 mx-auto"
+                >
+                  Tooltip
+                </span>
+              </div>
             </div>
             <div className="relative">
               <div className="overflow-x-auto">
-                {displayList?.length > 0 ? (
-                  <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
-                    <thead>
-                      <tr className="bg-gray-300">
-                        <th rowSpan={2} className="border-r">
+                {(displayList?.length > 0 && isCheckedAll) ||
+                (selectedMonth && displayList.length > 0) ? (
+                    <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
+                      <thead>
+                        <tr className="bg-gray-300">
+                          <th rowSpan={2} className="border-r">
                           ID
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Tasks
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Employee
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Status
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Hour
-                        </th>
-                        <th colSpan={2} className="border-r border-b">
+                          </th>
+                          <th colSpan={2} className="border-r border-b">
                           Estimate
-                        </th>
-                        <th colSpan={2} className="border-r border-b">
+                          </th>
+                          <th colSpan={2} className="border-r border-b">
                           Actual
-                        </th>
-                        <TableHeaderMonthComponent></TableHeaderMonthComponent>
-                      </tr>
-                      <tr className="bg-gray-300">
-                        <th className="border-r">Start</th>
-                        <th className="border-r">End</th>
-                        <th className="border-r">Start</th>
-                        <th className="border-r">End</th>
-                        <TableHeaderDayComponent></TableHeaderDayComponent>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayList?.map((t: TaskByProject) => (
-                        <tr key={t.id}>
-                          <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
-                            {t.id}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {t.title?.length >= 7
-                              ? t.title.slice(0, 7) + '...'
-                              : t.title}
-                          </td>
-                          <td className="text-center border-r border-b w-[8px] min-w-[80px] h-[43]px min-h-[43px]">
-                            {t.employeeName?.length >= 5
-                              ? t.employeeName.slice(0, 5) + '...'
-                              : t.employeeName}
-                          </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
-                            {t.status === 0
-                              ? 'Open'
-                              : t.status === 1
-                                ? 'In Progress'
-                                : t.status === 2
-                                  ? 'Finish'
-                                  : 'Close'}
-                          </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
-                            {t.estimateHour}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {moment(t.estimateStartDate).format('YYYY-MM-DD')}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {moment(t.estimateEndDate).format('YYYY-MM-DD')}
-                          </td>
-                          <td className="text-center text-sm border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {t.actualStartDate
-                              ? moment(t.actualStartDate).format('YYYY-MM-DD')
-                              : moment().format('YYYY-MM-DD') >
-                                t.estimateEndDate
-                                ? 'Task is overdue'
-                                : '-'}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {t.actualEndDate
-                              ? moment(t.actualEndDate).format('YYYY-MM-DD')
-                              : moment().format('YYYY-MM-DD') >
-                                t.estimateEndDate
-                                ? 'Task is overdue'
-                                : '-'}
-                          </td>
-                          <TableCellComponent
-                            cell={t}
-                            taskEstStartDate={moment(t.estimateStartDate)}
-                            taskEstEndDate={moment(t.estimateEndDate)}
-                            taskActStartDate={moment(t.actualStartDate)}
-                            taskActEndDate={moment(t.actualEndDate)}
-                          ></TableCellComponent>
+                          </th>
+                          <TableHeaderMonthComponent></TableHeaderMonthComponent>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="w-full flex justify-center p-4">
-                    <p className="font-semibold text-gray-800 mt-20">
+                        <tr className="bg-gray-300">
+                          <th className="border-r">Start</th>
+                          <th className="border-r">End</th>
+                          <th className="border-r">Start</th>
+                          <th className="border-r">End</th>
+                          <TableHeaderDayComponent></TableHeaderDayComponent>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayList?.map((t: TaskByProject) => (
+                          <tr key={t.id}>
+                            <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
+                              {t.id}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {t.title?.length >= 7
+                                ? t.title.slice(0, 7) + '...'
+                                : t.title}
+                            </td>
+                            <td className="text-center border-r border-b w-[8px] min-w-[80px] h-[43]px min-h-[43px]">
+                              {t.employeeName?.length >= 5
+                                ? t.employeeName.slice(0, 5) + '...'
+                                : t.employeeName}
+                            </td>
+                            <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
+                              {t.status === 0
+                                ? 'Open'
+                                : t.status === 1
+                                  ? 'In Progress'
+                                  : t.status === 2
+                                    ? 'Finish'
+                                    : 'Close'}
+                            </td>
+                            <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
+                              {t.estimateHour}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {moment(t.estimateStartDate).format('YYYY-MM-DD')}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {moment(t.estimateEndDate).format('YYYY-MM-DD')}
+                            </td>
+                            <td className="text-center text-sm border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {t.actualStartDate
+                                ? moment(t.actualStartDate).format('YYYY-MM-DD')
+                                : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                  ? 'Task is overdue'
+                                  : '-'}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {t.actualEndDate
+                                ? moment(t.actualEndDate).format('YYYY-MM-DD')
+                                : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                  ? 'Task is overdue'
+                                  : '-'}
+                            </td>
+                            <TableCellComponent cell={t}></TableCellComponent>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="w-full flex justify-center p-1">
+                      <p className="font-semibold text-gray-800 mt-20">
                       There is no data.
-                    </p>
-                  </div>
-                )}
+                      </p>
+                    </div>
+                  )}
               </div>
               <div className="absolute top-0 left-0 z-1">
-                {displayList?.length > 0 ? (
-                  <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
-                    <thead>
-                      <tr className="bg-blue-50">
-                        <th
-                          rowSpan={2}
-                          className="border-r h-[66px] min-h-[66px]"
-                        >
+                {displayList?.length > 0 ||
+                (selectedMonth && displayList.length > 0) ? (
+                    <table className="table-fixed border text-center text-sm divide-y divide-gray-200">
+                      <thead>
+                        <tr className="bg-blue-50">
+                          <th
+                            rowSpan={2}
+                            className="border-r h-[66px] min-h-[66px]"
+                          >
                           ID
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Tasks
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Employee
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Status
-                        </th>
-                        <th rowSpan={2} className="border-r">
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Hour
-                        </th>
-                        <th colSpan={2} className="border-r border-b">
+                          </th>
+                          <th colSpan={2} className="border-r border-b">
                           Estimate
-                        </th>
-                        <th colSpan={2} className="border-r border-b">
+                          </th>
+                          <th colSpan={2} className="border-r border-b">
                           Actual
-                        </th>
-                      </tr>
-                      <tr className="bg-blue-50">
-                        <th className="border-r">Start</th>
-                        <th className="border-r">End</th>
-                        <th className="border-r">Start</th>
-                        <th className="border-r">End</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayList?.map((t: TaskByProject) => (
-                        <tr
-                          key={t.id}
-                          onClick={() => router.push(`/task/${t.id}/edit`)}
-                          className="bg-gray-300 hover:bg-primary"
-                        >
-                          <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
-                            {t.id}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {t.title?.length >= 7
-                              ? t.title.slice(0, 7) + '...'
-                              : t.title}
-                          </td>
-                          <td className="text-center border-r border-b w-[8px] min-w-[80px] h-[43]px min-h-[43px]">
-                            {t.employeeName?.length >= 5
-                              ? t.employeeName.slice(0, 5) + '...'
-                              : t.employeeName}
-                          </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
-                            {t.status === 0
-                              ? 'Open'
-                              : t.status === 1
-                                ? 'In Progress'
-                                : t.status === 2
-                                  ? 'Finish'
-                                  : 'Close'}
-                          </td>
-                          <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
-                            {t.estimateHour}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {moment(t.estimateStartDate).format('YYYY-MM-DD')}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {moment(t.estimateEndDate).format('YYYY-MM-DD')}
-                          </td>
-                          <td className="text-center text-sm border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {t.actualStartDate
-                              ? moment(t.actualStartDate).format('YYYY-MM-DD')
-                              : moment().format('YYYY-MM-DD') >
-                                t.estimateEndDate
-                                ? 'Task is overdue'
-                                : '-'}
-                          </td>
-                          <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
-                            {t.actualEndDate
-                              ? moment(t.actualEndDate).format('YYYY-MM-DD')
-                              : moment().format('YYYY-MM-DD') >
-                                t.estimateEndDate
-                                ? 'Task is overdue'
-                                : '-'}
-                          </td>
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  ''
-                )}
+                        <tr className="bg-blue-50">
+                          <th className="border-r">Start</th>
+                          <th className="border-r">End</th>
+                          <th className="border-r">Start</th>
+                          <th className="border-r">End</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayList?.map((t: TaskByProject) => (
+                          <tr
+                            key={t.id}
+                            onClick={() => router.push(`/task/${t.id}/edit`)}
+                            className="bg-gray-300 hover:bg-primary"
+                          >
+                            <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
+                              {t.id}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {t.title?.length >= 7
+                                ? t.title.slice(0, 7) + '...'
+                                : t.title}
+                            </td>
+                            <td className="text-center border-r border-b w-[8px] min-w-[80px] h-[43]px min-h-[43px]">
+                              {t.employeeName?.length >= 5
+                                ? t.employeeName.slice(0, 5) + '...'
+                                : t.employeeName}
+                            </td>
+                            <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
+                              {t.status === 0
+                                ? 'Open'
+                                : t.status === 1
+                                  ? 'In Progress'
+                                  : t.status === 2
+                                    ? 'Finish'
+                                    : 'Close'}
+                            </td>
+                            <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
+                              {t.estimateHour}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {moment(t.estimateStartDate).format('YYYY-MM-DD')}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {moment(t.estimateEndDate).format('YYYY-MM-DD')}
+                            </td>
+                            <td className="text-center text-sm border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {t.actualStartDate
+                                ? moment(t.actualStartDate).format('YYYY-MM-DD')
+                                : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                  ? 'Task is overdue'
+                                  : '-'}
+                            </td>
+                            <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
+                              {t.actualEndDate
+                                ? moment(t.actualEndDate).format('YYYY-MM-DD')
+                                : moment().format('YYYY-MM-DD') >
+                                t.estimateEndDate
+                                  ? 'Task is overdue'
+                                  : '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    ''
+                  )}
               </div>
             </div>
           </section>

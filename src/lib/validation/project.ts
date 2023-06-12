@@ -1,5 +1,5 @@
 /* eslint-disable no-magic-numbers */
-import { object, string } from 'yup';
+import { object, string, mixed } from 'yup';
 import { maxLenErrMsg, requiredErrMsg } from './validation-message';
 
 export const projectSchema = object({
@@ -10,6 +10,7 @@ export const projectSchema = object({
   description: string()
     .required(requiredErrMsg('Description'))
     .max(255, maxLenErrMsg(255)),
+  type: mixed().nullable(),
   startDate: string().required(requiredErrMsg('Start Date')),
   endDate: string()
     .required(requiredErrMsg('End Date'))

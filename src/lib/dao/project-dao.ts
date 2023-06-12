@@ -115,6 +115,7 @@ export async function createProject(
   name: string,
   language: string,
   description: string,
+  type: any,
   startDate: string,
   endDate: string
 ): Promise<number> {
@@ -124,6 +125,7 @@ export async function createProject(
       name: name,
       language: language,
       description: description,
+      type: type,
       start_date: startDate,
       end_date: endDate,
       created_at: currentDateTime,
@@ -141,6 +143,7 @@ export async function updateProjectById(
   name: string,
   language: string,
   description: string,
+  type: string,
   startDate: string,
   endDate: string
 ): Promise<number> {
@@ -149,6 +152,7 @@ export async function updateProjectById(
       name: name,
       language: language,
       description: description,
+      type: type,
       start_date: startDate,
       end_date: endDate,
       updated_at: getFormattedCurrentDateTime(),
