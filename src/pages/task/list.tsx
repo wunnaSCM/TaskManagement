@@ -30,11 +30,12 @@ import TaskExcelFileExport from '@/components/TaskExcelFileExport';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const STATUS_LIST = [
-  { value: 4, label: 'All' },
+  { value: -1, label: 'All' },
   { value: 0, label: 'Open' },
   { value: 1, label: 'In Progress' },
   { value: 2, label: 'Finish' },
   { value: 3, label: 'Close' },
+  { value: 4, label: 'Review'},
   { value: 5, label: 'Not Close' },
 ] as ReactSelectOption[];
 
@@ -275,13 +276,17 @@ const TaskList: NextPageWithLayout = () => {
                             {t.actualHour ? t.actualHour : '-'}
                           </TableCell>
                           <TableCell>
-                            {t.status === 0
-                              ? 'Open'
-                              : t.status === 1
-                              ? 'In Progress'
-                              : t.status === 2
-                              ? 'Finish'
-                              : 'Close'}
+                          {t.status === 0
+                                ? 'Open'
+                                : t.status === 1
+                                  ? 'In Progress'
+                                  : t.status === 2
+                                    ? 'Finish'
+                                    : t.status === 3
+                                      ? 'Close'
+                                      : t.status === 4
+                                        ? 'Review'
+                                        : 'Not Close'}
                           </TableCell>
                           <TableCell className="text-center">
                             {moment(t.estimateStartDate).format(

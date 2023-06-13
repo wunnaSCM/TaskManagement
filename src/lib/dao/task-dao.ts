@@ -14,6 +14,7 @@ const formatTaskObject = (task: any): Task => {
       id: task.projectId,
       name: task.projectName,
     },
+    type: task.type,
     title: task.title,
     description: task.description,
     assignedEmployee: {
@@ -40,6 +41,7 @@ const getMainQuery = () => {
       'tasks.id',
       'projects.id AS projectId',
       'projects.name AS projectName',
+      'tasks.type',
       'tasks.title',
       'tasks.description',
       'employees.id AS employeeId',
@@ -89,11 +91,12 @@ const getSearchQuery = (
  * 2 : Finished
  * 3 : Closed
  * ----------
- * 4 : All
+ * -1 : All
+ * 4  : Review
  * 5 : Not_Closed
  */
 const filterTaskStatus = (builder: any, status: number) => {
-  if (status < 4) {
+  if (status >= 0 && status <= 4) {
     return builder.where('tasks.status', status);
   } else if (status === 5) {
     return builder.whereNot('tasks.status', TASK_STATUS_CLOSE);
@@ -164,6 +167,7 @@ export async function getAllTasksListForExcel(ownerId: number) {
 export async function getTaskById(id: number): Promise<Task> {
   const mainQuery = getMainQuery();
   const tasks = (await mainQuery.where('tasks.id', id)) as object[];
+  console.log('tasks', tasks);
   return formatTaskObject(tasks[0]);
 }
 
@@ -199,6 +203,7 @@ export async function checkSimilarTaskExist(
 
 export async function createTask(
   project: number,
+  type: any,
   title: string,
   description: string,
   assignedEmployee: number,
@@ -211,6 +216,7 @@ export async function createTask(
 
     const response = await Knex('tasks').insert({
       project: project,
+      type: type,
       title: title,
       description: description,
       assignedEmployee: assignedEmployee,
@@ -231,6 +237,7 @@ export async function createTask(
 export async function updateTaskById(
   id: number,
   project: string,
+  type: any,
   title: string,
   description: string,
   assignedEmployee: string,
@@ -245,6 +252,7 @@ export async function updateTaskById(
   try {
     const response = await Knex('tasks').where({ id: id }).update({
       project: project,
+      type: type,
       title: title,
       description: description,
       assignedEmployee: assignedEmployee,

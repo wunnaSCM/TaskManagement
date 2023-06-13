@@ -1,5 +1,5 @@
 /* eslint-disable no-magic-numbers */
-import { object, string, number } from 'yup';
+import { object, string, number, mixed } from 'yup';
 import { DATETIME_FORMAT_REGEX } from './validation-format';
 import {
   dateErrMsg,
@@ -13,6 +13,7 @@ const baseSchema = object({
   project: string()
     .required(requiredErrMsg('Project'))
     .max(50, maxLenErrMsg(50)),
+  type: mixed().nullable(),
   title: string().required(requiredErrMsg('Title')).max(50, maxLenErrMsg(50)),
   description: string()
     .required(requiredErrMsg('Description'))
@@ -46,10 +47,11 @@ const baseSchema = object({
 });
 
 const updateSchema = baseSchema.shape({
+  type: mixed().nullable(),
   status: number()
     .required(requiredErrMsg('Status'))
     .min(0, minErrMsg(0))
-    .max(3, maxErrMsg(3)),
+    .max(4, maxErrMsg(3)),
   actualHour: number()
     .nullable()
     .min(0, minErrMsg(0))

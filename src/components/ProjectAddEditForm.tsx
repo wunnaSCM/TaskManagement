@@ -122,12 +122,17 @@ export default function ProjectAddEditForm({
     router.back();
   }, [router]);
 
+  const [updateTypeList, setUpdateTypeList] = useState([]);
+
   const getProjectDataById = useCallback(
     async (id: number) => {
       await fetch('/api/projects/' + id)
         .then((res) => res.json())
         .then((json) => {
           const pp = json.data;
+          // console.log('edit data', pp.type);
+          const arr = pp.type.split(',');
+          setUpdateTypeList(arr);
           pp.startDate = new Date(pp.startDate);
           pp.endDate = new Date(pp.endDate);
           for (const [key, value] of Object.entries(pp)) {
@@ -137,6 +142,10 @@ export default function ProjectAddEditForm({
     },
     [setValue]
   );
+
+  const UPDATE_TYPE_LIST = updateTypeList.map((item) => {
+    return { value: item, label: item.charAt(0).toUpperCase() + item.slice(1) };
+  });
 
   useEffect(() => {
     if (editForm && router.query.id !== undefined) {
@@ -178,7 +187,7 @@ export default function ProjectAddEditForm({
                 <ReactMultipleSelect
                   id="type"
                   label="Type"
-                  optionsObject={TYPE_LIST}
+                  optionsObject={editForm ? UPDATE_TYPE_LIST : TYPE_LIST}
                   placeholder="Select Type"
                   requiredField
                 />
@@ -189,6 +198,7 @@ export default function ProjectAddEditForm({
                   placeholder="YYYY-MM-DD"
                   requiredField
                 />
+
                 <DatePicker
                   id="endDate"
                   label="End Date"

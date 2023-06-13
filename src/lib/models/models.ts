@@ -1,6 +1,7 @@
 export interface Project {
   id: number;
   name: string;
+  type: any;
   language: string;
   description: string;
   startDate: string;
@@ -37,6 +38,7 @@ export interface Task {
   };
   // projectName: string;
   // assignedEmployee: string;
+  type: any;
   title: string;
   description: string;
   assignedEmployee: {
@@ -92,6 +94,7 @@ export interface TaskByProject {
   id: number,
   projectId: number,
   projectName: string,
+  projectType: any,
   status: number,
   title: string,
   updatedAt: string

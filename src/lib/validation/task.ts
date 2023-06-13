@@ -22,6 +22,7 @@ const baseSchema = object({
       return true;
     }
   ),
+  type: mixed().nullable(),
   title: string().required(requiredErrMsg('Title')).max(50, maxLenErrMsg(50)),
   description: string()
     .required(requiredErrMsg('Description'))
@@ -62,6 +63,7 @@ const baseSchema = object({
 });
 
 const updateSchema = baseSchema.shape({
+  type: mixed().nullable(),
   status: mixed().test(
     'Select-Required',
     requiredErrMsg('Status'),

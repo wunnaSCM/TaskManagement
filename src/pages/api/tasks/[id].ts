@@ -39,6 +39,7 @@ const updateTask = async (
     const response = await updateTaskById(
       id,
       task.project,
+      task.type,
       task.title,
       task.description,
       task.assignedEmployee,

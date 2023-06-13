@@ -2,8 +2,9 @@
 import React from 'react';
 import { Controller, RegisterOptions, useFormContext } from 'react-hook-form';
 import CreatableSelect from 'react-select/creatable';
+import { ReactSelectOption } from './ReactSelect';
 
-export interface ReactSelectOption {
+export interface ReactMultipleSelectOption {
   value: string | number;
   label: string;
 }
@@ -102,30 +103,16 @@ export default function ReactMultipleSelect({
           rules={validation}
           // eslint-disable-next-line react/jsx-no-bind
           render={({ field }) => {
-            const styles = errors[id] ? errorStyles : customStyles;
-            // return onChange ? (
-            //   // <Select
-            //   //   {...field}
-            //   //   isDisabled={disabled}
-            //   //   placeholder={placeholder}
-            //   //   options={options}
-            //   //   styles={styles}
-            //   //   onChange={onChange}
-            //   //   {...rest}
-            //   // />
-            //   <CreatableSelect isMulti {...field} options={options} onChange={handleSelectChange} {...rest} />
-            // ) : (
-            //   // <Select
-            //   //   {...field}
-            //   //   isDisabled={disabled}
-            //   //   placeholder={placeholder}
-            //   //   options={options}
-            //   //   styles={styles}
-            //   //   {...rest}
-            //   // />
-            //   <CreatableSelect isMulti {...field} options={options} onChange={handleSelectChange} {...rest} />
-            // );
-            return (
+            // const styles = errors[id] ? errorStyles : customStyles;
+            return onChange ? (
+              <CreatableSelect
+                {...field}
+                isMulti
+                options={options}
+                onChange={onChange}
+                {...rest}
+              />
+            ) : (
               <CreatableSelect
                 {...field}
                 isMulti
@@ -133,6 +120,14 @@ export default function ReactMultipleSelect({
                 {...rest}
               />
             );
+            // return (
+            //   <CreatableSelect
+            //     {...field}
+            //     isMulti
+            //     options={options}
+            //     {...rest}
+            //   />
+            // );
           }}
         />
         <div className="mt-1">

@@ -15,6 +15,7 @@ const getMainQuery = () => {
     'name',
     'language',
     'description',
+    'type',
     'start_date AS startDate',
     'end_date AS endDate',
     'created_at AS createdAt',
@@ -70,8 +71,20 @@ export async function getAllProjectIdAndName() {
   const projects = await Knex.select(
     'id',
     'name',
+    'type',
     'start_date AS startDate',
     'end_date AS endDate'
+  )
+    .from('projects')
+    .where('end_date', '>', getFormattedCurrentDate());
+  return projects;
+}
+
+export async function getAllProjectType() {
+  const projects = await Knex.select(
+    'id',
+    'name',
+    'type',
   )
     .from('projects')
     .where('end_date', '>', getFormattedCurrentDate());

@@ -18,11 +18,12 @@ import 'react-datepicker/dist/react-datepicker.css';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const STATUS_LIST = [
-  { value: 4, label: 'All' },
+  { value: -1, label: 'All' },
   { value: 0, label: 'Open' },
   { value: 1, label: 'In Progress' },
   { value: 2, label: 'Finish' },
   { value: 3, label: 'Close' },
+  { value: 4, label: 'Review' },
   { value: 5, label: 'Not Close' },
 ] as ReactSelectOption[];
 
@@ -59,14 +60,11 @@ const ProjectDetail: NextPageWithLayout = () => {
     };
   }
   const testHoliday = holiFunc();
-  console.log('holiday', testHoliday.holiday);
 
   const holidayArr = testHoliday?.holiday?.map((item) => {
     // return moment(item.start.date).format('YYYY-MM-DD');
     return item.summary;
   });
-
-  console.log('holidayArr', holidayArr);
 
   function projectById(id: number) {
     const { data, error, isLoading } = useSWR(`/api/projects/${id}`, fetcher);
@@ -94,6 +92,16 @@ const ProjectDetail: NextPageWithLayout = () => {
   const employees = projectByGetEmployee();
   const EMPLOYEE_LIST = Object.values(employees);
   EMPLOYEE_LIST?.[0]?.unshift({ value: -1, label: 'All' });
+
+  // type list
+  const arr = res?.project?.type?.split(',');
+  const TYPE_LIST = arr?.map((item) => {
+    return { value: item, label: item.charAt(0).toUpperCase() + item.slice(1) };
+  });
+  TYPE_LIST?.unshift({ value: -1, label: 'All' });
+  const [selectedType, setSelectedType] = useState(
+    TYPE_LIST?.[0] ?? { value: -1, label: 'All' }
+  );
 
   // remove duplicate employee id and name
   const EMPLOYEE_LIST_UPDATE = EMPLOYEE_LIST?.[0]?.filter((obj, index) => {
@@ -246,7 +254,7 @@ const ProjectDetail: NextPageWithLayout = () => {
         ) {
           holidayTest = 'bg-gray-300';
           holidayLabel = item.summary;
-          console.log('label', holidayLabel);
+          // console.log('label', holidayLabel);
         } else {
           weekend = date.day() === 0 || date.day() === 6 ? 'bg-gray-300' : '';
           overDueAndProgress =
@@ -315,7 +323,9 @@ const ProjectDetail: NextPageWithLayout = () => {
       return (
         (selectedEmployee?.value === -1 ||
           item.employeeId === selectedEmployee?.value) &&
-        (selectedStatus?.value === 4 || item.status === selectedStatus?.value)
+        (selectedStatus?.value === -1 ||
+          item.status === selectedStatus?.value || (selectedStatus?.value === 5 && item.status !== 3)) &&
+        (selectedType?.value === -1 || item.type === selectedType?.value)
       );
     });
   }
@@ -324,6 +334,7 @@ const ProjectDetail: NextPageWithLayout = () => {
     data?.data,
     selectedEmployee?.value,
     selectedStatus?.value,
+    selectedType?.value,
   ]);
 
   const onChangeStatus = (e: object) => {
@@ -343,6 +354,10 @@ const ProjectDetail: NextPageWithLayout = () => {
     const range = getMonthRange(month, year);
     setProjectStartDate(range.start);
     setProjectEndDate(range.end);
+  };
+
+  const onChangeType = (e: object) => {
+    setSelectedType(e);
   };
 
   return (
@@ -396,6 +411,16 @@ const ProjectDetail: NextPageWithLayout = () => {
                     defaultValue={selectedStatus}
                     optionsObject={STATUS_LIST}
                     onChange={onChangeStatus}
+                  />
+                </div>
+                <div className="block mt-2 text-sm font-medium text-primary ml-5">
+                  Type
+                </div>
+                <div className="w-full sm:w-36 mt-2 sm:mt-0 sm:ms-2">
+                  <NormalSelect
+                    defaultValue={selectedType}
+                    optionsObject={TYPE_LIST}
+                    onChange={onChangeType}
                   />
                 </div>
                 <div className="block mt-2 text-sm font-medium text-primary ml-5">
@@ -488,7 +513,7 @@ const ProjectDetail: NextPageWithLayout = () => {
               <div>Weekend</div>
               <div className="order mx-4  w-6 h-6 border-2 border-black bg-primary"></div>
               <div>Today</div>
-              <div className="group flex relative">
+              {/* <div className="group flex relative">
                 <span className="bg-red-400 text-white px-2 py-1">Button</span>
                 <span
                   className="group-hover:opacity-100 transition-opacity bg-gray-800 px-1 text-sm text-gray-100 rounded-md absolute left-1/2 
@@ -496,7 +521,7 @@ const ProjectDetail: NextPageWithLayout = () => {
                 >
                   Tooltip
                 </span>
-              </div>
+              </div> */}
             </div>
             <div className="relative">
               <div className="overflow-x-auto">
@@ -507,6 +532,9 @@ const ProjectDetail: NextPageWithLayout = () => {
                         <tr className="bg-gray-300">
                           <th rowSpan={2} className="border-r">
                           ID
+                          </th>
+                          <th rowSpan={2} className="border-r">
+                          Type
                           </th>
                           <th rowSpan={2} className="border-r">
                           Tasks
@@ -542,6 +570,9 @@ const ProjectDetail: NextPageWithLayout = () => {
                             <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
                               {t.id}
                             </td>
+                            <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
+                              {t.type}
+                            </td>
                             <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                               {t.title?.length >= 7
                                 ? t.title.slice(0, 7) + '...'
@@ -559,7 +590,11 @@ const ProjectDetail: NextPageWithLayout = () => {
                                   ? 'In Progress'
                                   : t.status === 2
                                     ? 'Finish'
-                                    : 'Close'}
+                                    : t.status === 3
+                                      ? 'Close'
+                                      : t.status === 4
+                                        ? 'Review'
+                                        : 'Not Close'}
                             </td>
                             <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
                               {t.estimateHour}
@@ -612,6 +647,9 @@ const ProjectDetail: NextPageWithLayout = () => {
                           ID
                           </th>
                           <th rowSpan={2} className="border-r">
+                          Type
+                          </th>
+                          <th rowSpan={2} className="border-r">
                           Tasks
                           </th>
                           <th rowSpan={2} className="border-r">
@@ -647,6 +685,9 @@ const ProjectDetail: NextPageWithLayout = () => {
                             <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
                               {t.id}
                             </td>
+                            <td className="text-center border-r border-b w-[50px] min-w-[50px] py-2 h-[43]px min-h-[43px]">
+                              {t.type}
+                            </td>
                             <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[43]px min-h-[43px]">
                               {t.title?.length >= 7
                                 ? t.title.slice(0, 7) + '...'
@@ -664,7 +705,11 @@ const ProjectDetail: NextPageWithLayout = () => {
                                   ? 'In Progress'
                                   : t.status === 2
                                     ? 'Finish'
-                                    : 'Close'}
+                                    : t.status === 3
+                                      ? 'Close'
+                                      : t.status === 4
+                                        ? 'Review'
+                                        : 'Not Close'}
                             </td>
                             <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[43]px min-h-[43px]">
                               {t.estimateHour}

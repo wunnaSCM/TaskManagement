@@ -17,12 +17,16 @@ import { useSession } from 'next-auth/react';
 import { POSITION_ADMIN } from '@/lib/constants';
 import { Employee, Project } from '@/lib/models/models';
 import { taskCreateSchema, taskUpdateSchema } from '@/lib/validation/task';
+import {
+  ReactMultipleSelectOption,
+} from './ReactMultipleSelect';
 
 const statusList = [
   { value: '0', label: 'Open' },
   { value: '1', label: 'In Progress' },
   { value: '2', label: 'Finish' },
   { value: '3', label: 'Close' },
+  { value: '4', label: 'Review'}
 ];
 
 export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
@@ -44,6 +48,11 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
 
   //Employee id,name DataList
   const [employeeList, setEmployeeList] = useState<ReactSelectOption[]>([]);
+
+  //Project id, type list
+  const [projectTypeList, setProjectTypeList] = useState<
+    ReactMultipleSelectOption[]
+  >([]);
 
   // Estimate/Actual Time
   const [estimateStartTime, setEstimateStartTime] = useState<string | Date>();
@@ -69,7 +78,6 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
               value: e.id,
               label: e.name,
             }));
-
             setProjectList(newList);
           }
         });
@@ -129,6 +137,14 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
     const p = await fetch(`/api/projects/${pId}`)
       .then((res) => res.json())
       .then((res) => res?.data);
+    const arr = p.type.split(',');
+    const typeList = arr.map((item) => {
+      return {
+        value: item,
+        label: item.charAt(0).toUpperCase() + item.slice(1),
+      };
+    });
+    setProjectTypeList(typeList);
     setProjectStartDate(new Date(p.startDate));
     setProjectEndDate(new Date(p.endDate));
   };
@@ -206,6 +222,7 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
     data.actualHour = data.actualHour ? data.actualHour : null;
     data.project = data.project.value;
     data.assignedEmployee = data.assignedEmployee.value;
+    data.type = data?.type?.value;
 
     try {
       if (!editForm) {
@@ -268,8 +285,19 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
     async (id: number) => {
       await fetch('/api/tasks/' + id)
         .then((res) => res.json())
-        .then((json) => {
+        .then(async (json) => {
           const pp = json.data;
+          const p = await fetch(`/api/projects/${pp.project.id}`)
+            .then((res) => res.json())
+            .then((res) => res?.data);
+          const arr = p.type.split(',');
+          const typeList = arr.map((item) => {
+            return {
+              value: item,
+              label: item.charAt(0).toUpperCase() + item.slice(1),
+            };
+          });
+          setProjectTypeList(typeList);
           pp.estimateStartDate = new Date(pp?.estimateStartDate);
           pp.estimateEndDate = new Date(pp?.estimateEndDate);
 
@@ -358,6 +386,15 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
                   placeholder="Select Project"
                   disabled={!isAdmin}
                   onChange={onChangeProjectSelect}
+                  requiredField
+                />
+
+                <ReactSelect
+                  id="type"
+                  label="Type"
+                  optionsObject={projectTypeList}
+                  placeholder="Select Type"
+                  disabled={!isAdmin}
                   requiredField
                 />
                 <Input

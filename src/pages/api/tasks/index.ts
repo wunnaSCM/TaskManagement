@@ -49,6 +49,7 @@ const storeTaskIntoDb = async (req: NextApiRequest, res: NextApiResponse) => {
   ) {
     const response = await createTask(
       task.project,
+      task.type,
       task.title,
       task.description,
       task.assignedEmployee,
