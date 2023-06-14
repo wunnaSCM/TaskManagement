@@ -17,16 +17,14 @@ import { useSession } from 'next-auth/react';
 import { POSITION_ADMIN } from '@/lib/constants';
 import { Employee, Project } from '@/lib/models/models';
 import { taskCreateSchema, taskUpdateSchema } from '@/lib/validation/task';
-import {
-  ReactMultipleSelectOption,
-} from './ReactMultipleSelect';
+import { ReactMultipleSelectOption } from './ReactMultipleSelect';
 
 const statusList = [
   { value: '0', label: 'Open' },
   { value: '1', label: 'In Progress' },
   { value: '2', label: 'Finish' },
   { value: '3', label: 'Close' },
-  { value: '4', label: 'Review'}
+  { value: '4', label: 'Review' },
 ];
 
 export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
@@ -61,6 +59,20 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
   const [actualEndTime, setActualEndTime] = useState<string | Date>();
   const [projectStartDate, setProjectStartDate] = useState<string | Date>();
   const [projectEndDate, setProjectEndDate] = useState<string | Date>();
+
+  // Review Estimate/Actual Time
+  const [reviewEstimateStartTime, setReviewEstimateStartTime] = useState<
+    string | Date
+  >();
+  const [reviewEstimateEndTime, setReviewEstimateEndTime] = useState<
+    string | Date
+  >();
+  const [reviewActualStartTime, setReviewActualStartTime] = useState<
+    string | Date
+  >();
+  const [reviewActualEndTime, setReviewActualEndTime] = useState<
+    string | Date
+  >();
 
   const methods = useForm({
     mode: 'onTouched',
@@ -137,8 +149,8 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
     const p = await fetch(`/api/projects/${pId}`)
       .then((res) => res.json())
       .then((res) => res?.data);
-    const arr = p.type.split(',');
-    const typeList = arr.map((item) => {
+    const arr = p?.type?.split(',');
+    const typeList = arr?.map((item) => {
       return {
         value: item,
         label: item.charAt(0).toUpperCase() + item.slice(1),
@@ -209,6 +221,7 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onSubmit = async (data: any) => {
+    console.log('data', data);
     setLoading(true);
     // Change Date Format
     data.estimateStartDate = getFormattDatetime(data.estimateStartDate);
@@ -223,6 +236,20 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
     data.project = data.project.value;
     data.assignedEmployee = data.assignedEmployee.value;
     data.type = data?.type?.value;
+
+    data.reviewEstimateStartDate = getFormattDatetime(
+      data.reviewEstimateStartDate
+    );
+    data.reviewEstimateEndDate = getFormattDatetime(data.reviewEstimateEndDate);
+    data.reviewer = data.reviewer.value;
+
+    data.reviewActualStartDate = data.reviewActualStartDate
+      ? getFormattDatetime(data.reviewActualStartDate)
+      : null;
+    data.reviewActualEndDate = data.reviewActualEndDate
+      ? getFormattDatetime(data.reviewActualEndDate)
+      : null;
+    data.reviewActualHour = data.reviewActualHour ? data.reviewActualHour : null;
 
     try {
       if (!editForm) {
@@ -290,8 +317,8 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
           const p = await fetch(`/api/projects/${pp.project.id}`)
             .then((res) => res.json())
             .then((res) => res?.data);
-          const arr = p.type.split(',');
-          const typeList = arr.map((item) => {
+          const arr = p?.type?.split(',');
+          const typeList = arr?.map((item) => {
             return {
               value: item,
               label: item.charAt(0).toUpperCase() + item.slice(1),
@@ -318,10 +345,32 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
 
           pp.status = statusList[pp.status];
 
+          pp.reviewEstimateStartDate = new Date(pp?.reviewEstimateStartDate);
+          pp.reviewEstimateEndDate = new Date(pp?.reviewEstimateEndDate);
+
+          pp.reviewActualStartDate =
+            pp?.reviewActualStartDate !== null
+              ? new Date(pp?.reviewActualStartDate)
+              : null;
+          pp.reviewActualEndDate =
+            pp?.reviewActualEndDate !== null
+              ? new Date(pp?.reviewActualEndDate)
+              : null;
+
+          pp.reviewer = {
+            value: pp.reviewer.id,
+            label: pp.reviewer.name,
+          };
+
           setEstimateStartTime(pp.estimateStartDate);
           setEstimateEndTime(pp.estimateEndDate);
           setActualStartTime(pp.actualStartDate);
           setActualEndTime(pp.actualEndDate);
+
+          setReviewEstimateStartTime(pp.reviewEstimateStartDate);
+          setReviewEstimateEndTime(pp.reviewEstimateEndDate);
+          setReviewActualStartTime(pp.reviewActualStartDate);
+          setReviewActualEndTime(pp.reviewActualEndDate);
 
           for (const [key, value] of Object.entries(pp)) {
             setValue(key, value);
@@ -363,6 +412,40 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
   }, [
     actualStartTime,
     actualEndTime,
+    calculateWorkingHours,
+    setValue,
+    clearErrors,
+  ]);
+
+  useEffect(() => {
+    if (reviewEstimateStartTime && reviewEstimateEndTime) {
+      const ah = calculateWorkingHours(
+        reviewEstimateStartTime,
+        reviewEstimateEndTime
+      );
+      setValue('reviewEstimateHour', ah);
+      clearErrors('reviewEstimateHour');
+    }
+  }, [
+    reviewEstimateStartTime,
+    reviewEstimateEndTime,
+    calculateWorkingHours,
+    setValue,
+    clearErrors,
+  ]);
+
+  useEffect(() => {
+    if (reviewActualStartTime && reviewActualEndTime) {
+      const ah = calculateWorkingHours(
+        reviewActualStartTime,
+        reviewActualEndTime
+      );
+      setValue('reviewActualHour', ah);
+      clearErrors('reviewActualHour');
+    }
+  }, [
+    reviewActualStartTime,
+    reviewActualEndTime,
     calculateWorkingHours,
     setValue,
     clearErrors,
@@ -503,6 +586,100 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
                     />
                   </>
                 )}
+
+                <ReactSelect
+                  id="reviewer"
+                  label="Reviewer"
+                  optionsObject={employeeList}
+                  placeholder="Select Reviewer"
+                  disabled={!isAdmin}
+                  requiredField
+                />
+
+                <DateTimePicker
+                  id="reviewEstimateStartDate"
+                  label="Review Estimate Start Date"
+                  placeholder="YYYY-MM-DD h:mm"
+                  onChange={(d: Date) => {
+                    setReviewEstimateStartTime(d);
+                    setValue('reviewEstimateStartDate', d);
+                    clearErrors('reviewEstimateStartDate');
+                    clearErrors('reviewEstimateEndDate');
+                  }}
+                  readOnly={!isAdmin}
+                  minDate={projectStartDate}
+                  maxDate={projectEndDate}
+                  requiredField
+                />
+                <DateTimePicker
+                  id="reviewEstimateEndDate"
+                  label="Review Estimate End Date"
+                  placeholder="YYYY-MM-DD h:mm"
+                  onChange={(d: Date) => {
+                    setReviewEstimateEndTime(d);
+                    setValue('reviewEstimateEndDate', d);
+                    clearErrors('reviewEstimateEndDate');
+                  }}
+                  readOnly={!isAdmin}
+                  requiredField
+                  minDate={
+                    reviewEstimateStartTime
+                      ? reviewEstimateStartTime
+                      : projectStartDate
+                  }
+                  maxDate={projectEndDate}
+                />
+                <Input
+                  id="reviewEstimateHour"
+                  label="Review Estimate Hour"
+                  placeholder="Review Estimate Hour"
+                  readOnly
+                  requiredField
+                />
+
+                {editForm && (
+                  <>
+                    <DateTimePicker
+                      id="reviewActualStartDate"
+                      label="Review Actual Start Date"
+                      placeholder="YYYY-MM-DD h:mm"
+                      onChange={(d: Date) => {
+                        setReviewActualStartTime(d);
+                        setValue('reviewActualStartDate', d);
+                        clearErrors('reviewActualStartDate');
+                        clearErrors('reviewActualEndDate');
+                      }}
+                      minDate={projectStartDate}
+                      maxDate={projectEndDate}
+                      requiredField
+                    />
+                    <DateTimePicker
+                      id="reviewActualEndDate"
+                      label="Review Actual End Date"
+                      placeholder="YYYY-MM-DD h:mm"
+                      onChange={(d: Date) => {
+                        setReviewActualEndTime(d);
+                        setValue('reviewActualEndDate', d);
+                        clearErrors('reviewActualEndDate');
+                      }}
+                      requiredField
+                      minDate={
+                        reviewActualStartTime
+                          ? reviewActualStartTime
+                          : projectStartDate
+                      }
+                      maxDate={projectEndDate}
+                    />
+                    <Input
+                      id="reviewActualHour"
+                      label="Review Actual Hour"
+                      placeholder="Reviewer"
+                      readOnly
+                      requiredField
+                    />
+                  </>
+                )}
+
                 <div className="flex justify-between mt-10">
                   <Button
                     type="button"

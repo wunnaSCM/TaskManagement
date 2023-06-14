@@ -4,6 +4,7 @@ exports.up = async (knex) => {
     table.integer('project').unsigned().notNullable();
     table.string('title').notNullable();
     table.text('description');
+    table.string('type');
     table.integer('assignedEmployee').unsigned().notNullable();
     table.float('estimateHour').notNullable();
     table.float('actualHour');
@@ -12,10 +13,20 @@ exports.up = async (knex) => {
     table.datetime('estimateEndDate');
     table.datetime('actualStartDate');
     table.datetime('actualEndDate');
+    //  Reviewer
+    table.integer('reviewer').unsigned().notNullable();
+    table.float('reviewEstimateHour').notNullable();
+    table.float('reviewActualHour');
+    table.datetime('reviewEstimateStartDate');
+    table.datetime('reviewEstimateEndDate');
+    table.datetime('reviewActualStartDate');
+    table.datetime('reviewActualEndDate');
+
     table.datetime('created_at').notNullable();
     table.datetime('updated_at').notNullable();
     table.foreign('project').references('projects.id').onDelete('CASCADE');
     table.foreign('assignedEmployee').references('employees.id');
+    table.foreign('reviewer').references('employees.id');
   });
 };
 

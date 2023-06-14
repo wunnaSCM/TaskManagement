@@ -55,7 +55,11 @@ const storeTaskIntoDb = async (req: NextApiRequest, res: NextApiResponse) => {
       task.assignedEmployee,
       task.estimateHour,
       task.estimateStartDate,
-      task.estimateEndDate
+      task.estimateEndDate,
+      task.reviewer,
+      task.reviewEstimateHour,
+      task.reviewEstimateStartDate,
+      task.reviewEstimateEndDate,
     );
 
     if (response > 0) {

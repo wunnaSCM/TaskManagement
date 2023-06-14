@@ -49,7 +49,14 @@ const updateTask = async (
       task.actualHour,
       task.status,
       task.actualStartDate,
-      task.actualEndDate
+      task.actualEndDate,
+      task.reviewer,
+      task.reviewEstimateHour,
+      task.reviewEstimateStartDate,
+      task.reviewEstimateEndDate,
+      task.reviewActualHour,
+      task.reviewActualStartDate,
+      task.reviewActualEndDate
     );
 
     if (response > 0) {

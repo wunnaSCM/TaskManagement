@@ -28,6 +28,16 @@ const formatTaskObject = (task: any): Task => {
     status: task.status,
     actualStartDate: task.actualStartDate,
     actualEndDate: task.actualEndDate,
+    reviewer: {
+      id: task.reviewId,
+      name: task.reviewName,
+    },
+    reviewEstimateHour: task.reviewEstimateHour,
+    reviewEstimateStartDate: task.reviewEstimateStartDate,
+    reviewEstimateEndDate: task.reviewEstimateEndDate,
+    reviewActualHour: task.reviewActualHour,
+    reviewActualStartDate: task.reviewActualStartDate,
+    reviewActualEndDate: task.reviewActualEndDate,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     deletedAt: task.deletedAt,
@@ -36,7 +46,8 @@ const formatTaskObject = (task: any): Task => {
 
 const getMainQuery = () => {
   return Knex.join('projects', 'tasks.project', '=', 'projects.id')
-    .join('employees', 'tasks.assignedEmployee', '=', 'employees.id')
+    .join('employees AS assign', 'tasks.assignedEmployee', '=', 'assign.id')
+    .join('employees AS review', 'tasks.reviewer', '=', 'review.id')
     .select(
       'tasks.id',
       'projects.id AS projectId',
@@ -44,8 +55,8 @@ const getMainQuery = () => {
       'tasks.type',
       'tasks.title',
       'tasks.description',
-      'employees.id AS employeeId',
-      'employees.name AS employeeName',
+      'assign.id AS employeeId',
+      'assign.name AS employeeName',
       'tasks.estimateHour',
       'tasks.estimateStartDate',
       'tasks.estimateEndDate',
@@ -53,6 +64,14 @@ const getMainQuery = () => {
       'tasks.status',
       'tasks.actualStartDate',
       'tasks.actualEndDate',
+      'review.id AS reviewId',
+      'review.name AS reviewName',
+      'tasks.reviewEstimateHour',
+      'tasks.reviewEstimateStartDate',
+      'tasks.reviewEstimateEndDate',
+      'tasks.reviewActualHour',
+      'tasks.reviewActualStartDate',
+      'tasks.reviewActualEndDate',
       'tasks.created_at AS createdAt',
       'tasks.updated_at AS updatedAt'
     )
@@ -209,7 +228,11 @@ export async function createTask(
   assignedEmployee: number,
   estimateHour: number,
   estimateStartDate: string,
-  estimateEndDate: string
+  estimateEndDate: string,
+  reviewer: number,
+  reviewEstimateHour: number,
+  reviewEstimateStartDate: string,
+  reviewEstimateEndDate: string,
 ): Promise<number> {
   try {
     const currentDateTime = getFormattedCurrentDateTime();
@@ -224,6 +247,10 @@ export async function createTask(
       estimateStartDate: estimateStartDate,
       estimateEndDate: estimateEndDate,
       status: TASK_STATUS_OPEN,
+      reviewer: reviewer,
+      reviewEstimateHour: reviewEstimateHour,
+      reviewEstimateStartDate: reviewEstimateStartDate,
+      reviewEstimateEndDate: reviewEstimateEndDate,
       created_at: currentDateTime,
       updated_at: currentDateTime,
     });
@@ -247,7 +274,14 @@ export async function updateTaskById(
   actualHour: number | null,
   status: number,
   actualStartDate: string | null,
-  actualEndDate: string | null
+  actualEndDate: string | null,
+  reviewer: string,
+  reviewEstimateHour: number,
+  reviewEstimateStartDate: string,
+  reviewEstimateEndDate: string,
+  reviewActualHour: number | null,
+  reviewActualStartDate: string | null,
+  reviewActualEndDate: string | null
 ): Promise<number> {
   try {
     const response = await Knex('tasks').where({ id: id }).update({
@@ -263,6 +297,13 @@ export async function updateTaskById(
       status: status,
       actualStartDate: actualStartDate,
       actualEndDate: actualEndDate,
+      reviewer: reviewer,
+      reviewEstimateHour: reviewEstimateHour,
+      reviewEstimateStartDate: reviewEstimateStartDate,
+      reviewEstimateEndDate: reviewEstimateEndDate,
+      reviewActualHour: reviewActualHour,
+      reviewActualStartDate: reviewActualStartDate,
+      reviewActualEndDate: reviewActualEndDate,
       updated_at: getFormattedCurrentDateTime(),
     });
     return response;

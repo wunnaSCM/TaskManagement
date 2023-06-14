@@ -52,6 +52,16 @@ export interface Task {
   status: number;
   actualStartDate: string;
   actualEndDate: string;
+  reviewer: {
+    id: number;
+    name: string;
+  };
+  reviewEstimateHour: number;
+  reviewEstimateStartDate: string;
+  reviewEstimateEndDate: string;
+  reviewActualHour: number;
+  reviewActualStartDate: string;
+  reviewActualEndDate: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string;
@@ -94,9 +104,8 @@ export interface TaskByProject {
   id: number,
   projectId: number,
   projectName: string,
-  projectType: any,
+  type: any,
   status: number,
   title: string,
   updatedAt: string
-
 }

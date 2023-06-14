@@ -60,6 +60,43 @@ const baseSchema = object({
         }
       }
     ),
+  reviewer: mixed().test(
+    'Select-Required',
+    requiredErrMsg('Reviewer'),
+    function (value: any) {
+      const assignedEmp = this.parent.assignedEmployee.value;
+      if (value === undefined) {
+        return false;
+      }
+      if (value.value === undefined) {
+        return false;
+      }
+      if (value.value === assignedEmp) {
+        return false;
+      }
+      return true;
+    }
+  ),
+  reviewEstimateHour: number()
+    .required(requiredErrMsg('Review Estimate Hour'))
+    .min(0, minErrMsg(0))
+    .max(50, maxErrMsg(50)),
+  reviewEstimateStartDate: string().required(requiredErrMsg('Review Estimate Start Date')),
+  reviewEstimateEndDate: string()
+    .required(requiredErrMsg('Review Estimate End Date'))
+    .test(
+      'dateTest',
+      'Review Estimate End Date must be greater than Review Estimate Start Date',
+      function (value) {
+        const ed = new Date(value).getTime();
+        const sd = new Date(this.parent.estimateStartDate).getTime();
+        if (ed > sd) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    ),
 });
 
 const updateSchema = baseSchema.shape({
@@ -91,6 +128,30 @@ const updateSchema = baseSchema.shape({
         if (value) {
           const ed = new Date(value).getTime();
           const sd = new Date(this.parent.actualStartDate).getTime();
+          if (ed > sd) {
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          return true;
+        }
+      }
+    ),
+  reviewActualHour: string()
+    .nullable()
+    .min(0, minErrMsg(0))
+    .max(50, maxErrMsg(50)),
+  reviewActualStartDate: string().nullable(),
+  reviewActualEndDate: string()
+    .nullable()
+    .test(
+      'dateTest',
+      'Review Actual end date must be greater than review estimated actual start date',
+      function (value: any) {
+        if (value) {
+          const ed = new Date(value).getTime();
+          const sd = new Date(this.parent.reviewActualStartDate).getTime();
           if (ed > sd) {
             return true;
           } else {
