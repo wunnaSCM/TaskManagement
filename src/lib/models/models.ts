@@ -52,6 +52,7 @@ export interface Task {
   status: number;
   actualStartDate: string;
   actualEndDate: string;
+  assignedEmployeePercent: number;
   reviewer: {
     id: number;
     name: string;
@@ -62,6 +63,7 @@ export interface Task {
   reviewActualHour: number;
   reviewActualStartDate: string;
   reviewActualEndDate: string;
+  reviewerPercent: number;
   createdAt: string;
   updatedAt: string;
   deletedAt: string;
@@ -91,6 +93,9 @@ export interface Notification {
 }
 
 export interface TaskByProject {
+  assignedEmployeePercent: string;
+  reviewerPercent: string;
+  reviewActualHour: string;
   actualEndDate: string,
   actualHour: number,
   actualStartDate: string,
@@ -107,5 +112,11 @@ export interface TaskByProject {
   type: any,
   status: number,
   title: string,
+  reviewName: string,
+  reviewEstimateHour: string,
+  reviewEstimateStartDate: string,
+  reviewEstimateEndDate: string,
+  reviewActualStartDate: string,
+  reviewActualEndDate: string,
   updatedAt: string
 }

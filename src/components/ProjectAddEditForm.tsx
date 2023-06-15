@@ -62,10 +62,10 @@ export default function ProjectAddEditForm({
     // Change Date Format
     data.startDate = moment(data.startDate).format('yyyy-MM-DD');
     data.endDate = moment(data.endDate).format('yyyy-MM-DD');
-    const result = data.type.map((item) => {
+    const result = data?.type?.map((item) => {
       return item.value;
     });
-    data.type = result.toString();
+    data.type = result?.toString();
 
     try {
       if (!editForm) {
@@ -131,7 +131,7 @@ export default function ProjectAddEditForm({
         .then((json) => {
           const pp = json.data;
           // console.log('edit data', pp.type);
-          const arr = pp.type.split(',');
+          const arr = pp?.type?.split(',');
           setUpdateTypeList(arr);
           pp.startDate = new Date(pp.startDate);
           pp.endDate = new Date(pp.endDate);
@@ -143,7 +143,7 @@ export default function ProjectAddEditForm({
     [setValue]
   );
 
-  const UPDATE_TYPE_LIST = updateTypeList.map((item) => {
+  const UPDATE_TYPE_LIST = updateTypeList?.map((item) => {
     return { value: item, label: item.charAt(0).toUpperCase() + item.slice(1) };
   });
 

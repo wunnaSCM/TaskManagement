@@ -50,7 +50,7 @@ const TaskList: NextPageWithLayout = () => {
   const search = query?.search as string;
   const page = (query.page as string) ?? '1';
   const limit = (query.limit as string) ?? '';
-  const status = (query.status as string) ?? '4';
+  const status = (query.status as string) ?? '';
   const [selectedStatus, setSelectedStatus] = useState(STATUS_LIST[0]);
 
   const [searchKW, setSearchKW] = useState('');
@@ -68,16 +68,18 @@ const TaskList: NextPageWithLayout = () => {
           '&userId=' +
           (isAdmin ? 0 : userId)
       : '/api/tasks' +
-          '?page=' +
-          page +
-          '&limit=' +
-          limit +
-          '&status=' +
-          status +
-          '&userId=' +
-          (isAdmin ? 0 : userId),
+      '?page=' +
+      page +
+      '&limit=' +
+      limit +
+      '&status=' +
+      status +
+      '&userId=' +
+      (isAdmin ? 0 : userId),
     fetcher
   );
+
+  console.log('data', data);
 
   // Dialog Modal
   const [isModalOpen, setIsModalOpen] = useState(false);

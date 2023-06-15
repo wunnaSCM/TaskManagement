@@ -5,6 +5,7 @@ exports.up = async (knex) => {
     table.string('title').notNullable();
     table.text('description');
     table.string('type');
+    // Assigned Employee
     table.integer('assignedEmployee').unsigned().notNullable();
     table.float('estimateHour').notNullable();
     table.float('actualHour');
@@ -13,6 +14,7 @@ exports.up = async (knex) => {
     table.datetime('estimateEndDate');
     table.datetime('actualStartDate');
     table.datetime('actualEndDate');
+    table.integer('assignedEmployeePercent');
     //  Reviewer
     table.integer('reviewer').unsigned().notNullable();
     table.float('reviewEstimateHour').notNullable();
@@ -21,6 +23,7 @@ exports.up = async (knex) => {
     table.datetime('reviewEstimateEndDate');
     table.datetime('reviewActualStartDate');
     table.datetime('reviewActualEndDate');
+    table.integer('reviewerPercent');
 
     table.datetime('created_at').notNullable();
     table.datetime('updated_at').notNullable();

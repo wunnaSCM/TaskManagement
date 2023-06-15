@@ -31,6 +31,7 @@ const baseSchema = object({
     'Select-Required',
     requiredErrMsg('Assigned Employee'),
     function (value: any) {
+      console.log('assign emp', value);
       if (value === undefined) {
         return false;
       }
@@ -62,7 +63,7 @@ const baseSchema = object({
     ),
   reviewer: mixed().test(
     'Select-Required',
-    requiredErrMsg('Reviewer'),
+    'Assigned Employee and Reviewer must not be same!',
     function (value: any) {
       const assignedEmp = this.parent.assignedEmployee.value;
       if (value === undefined) {
@@ -75,13 +76,34 @@ const baseSchema = object({
         return false;
       }
       return true;
+    },
+  ).test(
+    'Select-Required',
+    'Please select the assigned Employee',
+    function () {
+      const assignedEmp = this.parent.assignedEmployee.value;
+      if (!assignedEmp) {
+        return false;
+      }
+      return true;
     }
   ),
   reviewEstimateHour: number()
     .required(requiredErrMsg('Review Estimate Hour'))
     .min(0, minErrMsg(0))
     .max(50, maxErrMsg(50)),
-  reviewEstimateStartDate: string().required(requiredErrMsg('Review Estimate Start Date')),
+  reviewEstimateStartDate: string().required(requiredErrMsg('Review Estimate Start Date'))
+    .test(
+      'Select-Required',
+      'Please select the assigned Employee',
+      function () {
+        const assignedEmp = this.parent.assignedEmployee.value;
+        if (!assignedEmp) {
+          return false;
+        }
+        return true;
+      }
+    ),
   reviewEstimateEndDate: string()
     .required(requiredErrMsg('Review Estimate End Date'))
     .test(
@@ -89,12 +111,23 @@ const baseSchema = object({
       'Review Estimate End Date must be greater than Review Estimate Start Date',
       function (value) {
         const ed = new Date(value).getTime();
-        const sd = new Date(this.parent.estimateStartDate).getTime();
+        const sd = new Date(this.parent.reviewEstimateStartDate).getTime();
         if (ed > sd) {
           return true;
         } else {
           return false;
         }
+      }
+    )
+    .test(
+      'dateTest',
+      'Please select the assigned Employee',
+      function () {
+        const assignedEmp = this.parent.assignedEmployee.value;
+        if (!assignedEmp) {
+          return false;
+        }
+        return true;
       }
     ),
 });
@@ -138,6 +171,9 @@ const updateSchema = baseSchema.shape({
         }
       }
     ),
+  assignedEmployeePercent: number()
+    .transform((value) => Number.isNaN(value) ? null : value)
+    .nullable().min(0).max(100),
   reviewActualHour: string()
     .nullable()
     .min(0, minErrMsg(0))
@@ -162,6 +198,9 @@ const updateSchema = baseSchema.shape({
         }
       }
     ),
+  reviewerPercent: number()
+    .transform((value) => Number.isNaN(value) ? null : value)
+    .nullable().min(0).max(100)
 });
 
 export const taskCreateSchema = baseSchema;

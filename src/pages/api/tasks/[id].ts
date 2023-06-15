@@ -50,13 +50,15 @@ const updateTask = async (
       task.status,
       task.actualStartDate,
       task.actualEndDate,
+      task.assignedEmployeePercent,
       task.reviewer,
       task.reviewEstimateHour,
       task.reviewEstimateStartDate,
       task.reviewEstimateEndDate,
       task.reviewActualHour,
       task.reviewActualStartDate,
-      task.reviewActualEndDate
+      task.reviewActualEndDate,
+      task.reviewerPercent
     );
 
     if (response > 0) {

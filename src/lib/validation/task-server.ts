@@ -105,6 +105,9 @@ const updateSchema = baseSchema.shape({
         }
       }
     ),
+  assignedEmployeePercent: number()
+    .transform((value) => Number.isNaN(value) ? null : value)
+    .nullable().min(0).max(100),
   reviewActualHour: number()
     .nullable()
     .min(0, minErrMsg(0))
@@ -132,6 +135,9 @@ const updateSchema = baseSchema.shape({
         }
       }
     ),
+  reviewerPercent: number()
+    .transform((value) => Number.isNaN(value) ? null : value)
+    .nullable().min(0).max(100),
 });
 
 export const taskCreateServerSchema = baseSchema;

@@ -28,6 +28,7 @@ const formatTaskObject = (task: any): Task => {
     status: task.status,
     actualStartDate: task.actualStartDate,
     actualEndDate: task.actualEndDate,
+    assignedEmployeePercent: task.assignedEmployeePercent,
     reviewer: {
       id: task.reviewId,
       name: task.reviewName,
@@ -38,6 +39,7 @@ const formatTaskObject = (task: any): Task => {
     reviewActualHour: task.reviewActualHour,
     reviewActualStartDate: task.reviewActualStartDate,
     reviewActualEndDate: task.reviewActualEndDate,
+    reviewerPercent: task.reviewerPercent,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     deletedAt: task.deletedAt,
@@ -64,6 +66,7 @@ const getMainQuery = () => {
       'tasks.status',
       'tasks.actualStartDate',
       'tasks.actualEndDate',
+      'tasks.assignedEmployeePercent',
       'review.id AS reviewId',
       'review.name AS reviewName',
       'tasks.reviewEstimateHour',
@@ -72,6 +75,7 @@ const getMainQuery = () => {
       'tasks.reviewActualHour',
       'tasks.reviewActualStartDate',
       'tasks.reviewActualEndDate',
+      'tasks.reviewerPercent',
       'tasks.created_at AS createdAt',
       'tasks.updated_at AS updatedAt'
     )
@@ -109,12 +113,13 @@ const getSearchQuery = (
  * 1 : In_Progress
  * 2 : Finished
  * 3 : Closed
+ * 4  : Review
  * ----------
  * -1 : All
- * 4  : Review
  * 5 : Not_Closed
  */
 const filterTaskStatus = (builder: any, status: number) => {
+  console.log('status', status);
   if (status >= 0 && status <= 4) {
     return builder.where('tasks.status', status);
   } else if (status === 5) {
@@ -275,13 +280,15 @@ export async function updateTaskById(
   status: number,
   actualStartDate: string | null,
   actualEndDate: string | null,
+  assignedEmployeePercent: number,
   reviewer: string,
   reviewEstimateHour: number,
   reviewEstimateStartDate: string,
   reviewEstimateEndDate: string,
   reviewActualHour: number | null,
   reviewActualStartDate: string | null,
-  reviewActualEndDate: string | null
+  reviewActualEndDate: string | null,
+  reviewerPercent: number
 ): Promise<number> {
   try {
     const response = await Knex('tasks').where({ id: id }).update({
@@ -297,6 +304,7 @@ export async function updateTaskById(
       status: status,
       actualStartDate: actualStartDate,
       actualEndDate: actualEndDate,
+      assignedEmployeePercent: assignedEmployeePercent,
       reviewer: reviewer,
       reviewEstimateHour: reviewEstimateHour,
       reviewEstimateStartDate: reviewEstimateStartDate,
@@ -304,6 +312,7 @@ export async function updateTaskById(
       reviewActualHour: reviewActualHour,
       reviewActualStartDate: reviewActualStartDate,
       reviewActualEndDate: reviewActualEndDate,
+      reviewerPercent: reviewerPercent,
       updated_at: getFormattedCurrentDateTime(),
     });
     return response;

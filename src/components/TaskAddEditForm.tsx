@@ -221,7 +221,7 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onSubmit = async (data: any) => {
-    console.log('data', data);
+    console.log('data', data.assignedEmployeePercent, data.reviewerPercent);
     setLoading(true);
     // Change Date Format
     data.estimateStartDate = getFormattDatetime(data.estimateStartDate);
@@ -249,7 +249,9 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
     data.reviewActualEndDate = data.reviewActualEndDate
       ? getFormattDatetime(data.reviewActualEndDate)
       : null;
-    data.reviewActualHour = data.reviewActualHour ? data.reviewActualHour : null;
+    data.reviewActualHour = data.reviewActualHour
+      ? data.reviewActualHour
+      : null;
 
     try {
       if (!editForm) {
@@ -275,6 +277,8 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
           });
       } else {
         data.status = data.status.value;
+        data.assignedEmployeePercent;
+        data.reviewerPercent;
         await fetch('/api/tasks/' + router.query.id, {
           method: 'PUT',
           headers: {
@@ -314,7 +318,8 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
         .then((res) => res.json())
         .then(async (json) => {
           const pp = json.data;
-          const p = await fetch(`/api/projects/${pp.project.id}`)
+          console.log('pp', pp);
+          const p = await fetch(`/api/projects/${pp?.project?.id}`)
             .then((res) => res.json())
             .then((res) => res?.data);
           const arr = p?.type?.split(',');
@@ -457,228 +462,254 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
 
   return (
     <main>
-      <div className="container sm:w-8/12 md:w-7/12 lg:w-5/12 mx-auto p-2">
+      <div className="container mx-auto p-2">
         <Card title={editForm ? 'Task Update Form' : 'Task Create Form'}>
           <div>
             <FormProvider {...methods}>
               <form onSubmit={handleSubmit(onSubmit)}>
-                <ReactSelect
-                  id="project"
-                  label="Project"
-                  optionsObject={projectList}
-                  placeholder="Select Project"
-                  disabled={!isAdmin}
-                  onChange={onChangeProjectSelect}
-                  requiredField
-                />
-
-                <ReactSelect
-                  id="type"
-                  label="Type"
-                  optionsObject={projectTypeList}
-                  placeholder="Select Type"
-                  disabled={!isAdmin}
-                  requiredField
-                />
-                <Input
-                  id="title"
-                  label="Title"
-                  placeholder="Enter your title"
-                  readOnly={!isAdmin}
-                  requiredField
-                />
-                <Input
-                  id="description"
-                  label="Description"
-                  placeholder="Enter description"
-                  readOnly={!isAdmin}
-                  requiredField
-                />
-                <ReactSelect
-                  id="assignedEmployee"
-                  label="Assigned Employee"
-                  optionsObject={employeeList}
-                  placeholder="Select Employee"
-                  disabled={!isAdmin}
-                  requiredField
-                />
-                <DateTimePicker
-                  id="estimateStartDate"
-                  label="Estimate Start Date"
-                  placeholder="YYYY-MM-DD h:mm"
-                  onChange={(d: Date) => {
-                    setEstimateStartTime(d);
-                    setValue('estimateStartDate', d);
-                    clearErrors('estimateStartDate');
-                    clearErrors('estimateEndDate');
-                  }}
-                  readOnly={!isAdmin}
-                  minDate={projectStartDate}
-                  maxDate={projectEndDate}
-                  requiredField
-                />
-                <DateTimePicker
-                  id="estimateEndDate"
-                  label="Estimate End Date"
-                  placeholder="YYYY-MM-DD h:mm"
-                  onChange={(d: Date) => {
-                    setEstimateEndTime(d);
-                    setValue('estimateEndDate', d);
-                    clearErrors('estimateEndDate');
-                  }}
-                  readOnly={!isAdmin}
-                  requiredField
-                  minDate={
-                    estimateStartTime ? estimateStartTime : projectStartDate
-                  }
-                  maxDate={projectEndDate}
-                />
-                <Input
-                  id="estimateHour"
-                  label="Estimate Hour"
-                  placeholder="Estimate Hour"
-                  readOnly
-                  requiredField
-                />
-                {editForm && (
-                  <>
+                <div className="grid grid-cols-3 gap-20">
+                  <div className='mt-5'>
                     <ReactSelect
-                      id="status"
-                      label="Select Status"
-                      optionsObject={statusList}
+                      id="project"
+                      label="Project"
+                      optionsObject={projectList}
+                      placeholder="Select Project"
+                      disabled={!isAdmin}
+                      onChange={onChangeProjectSelect}
+                      requiredField
+                    />
+
+                    <ReactSelect
+                      id="type"
+                      label="Type"
+                      optionsObject={projectTypeList}
+                      placeholder="Select Type"
+                      disabled={!isAdmin}
+                      requiredField
+                    />
+                    <Input
+                      id="title"
+                      label="Title"
+                      placeholder="Enter your title"
+                      readOnly={!isAdmin}
+                      requiredField
+                    />
+                    <Input
+                      id="description"
+                      label="Description"
+                      placeholder="Enter description"
+                      readOnly={!isAdmin}
+                      requiredField
+                    />
+                  </div>
+
+                  <div className='mt-5'>
+                    <ReactSelect
+                      id="assignedEmployee"
+                      label="Assigned Employee"
+                      optionsObject={employeeList}
+                      placeholder="Select Employee"
+                      disabled={!isAdmin}
                       requiredField
                     />
                     <DateTimePicker
-                      id="actualStartDate"
-                      label="Actual Start Date"
+                      id="estimateStartDate"
+                      label="Estimate Start Date"
                       placeholder="YYYY-MM-DD h:mm"
                       onChange={(d: Date) => {
-                        setActualStartTime(d);
-                        setValue('actualStartDate', d);
-                        clearErrors('actualStartDate');
-                        clearErrors('actualEndDate');
+                        setEstimateStartTime(d);
+                        setValue('estimateStartDate', d);
+                        clearErrors('estimateStartDate');
+                        clearErrors('estimateEndDate');
                       }}
+                      readOnly={!isAdmin}
                       minDate={projectStartDate}
                       maxDate={projectEndDate}
                       requiredField
                     />
                     <DateTimePicker
-                      id="actualEndDate"
-                      label="Actual End Date"
+                      id="estimateEndDate"
+                      label="Estimate End Date"
                       placeholder="YYYY-MM-DD h:mm"
                       onChange={(d: Date) => {
-                        setActualEndTime(d);
-                        setValue('actualEndDate', d);
-                        clearErrors('actualEndDate');
+                        setEstimateEndTime(d);
+                        setValue('estimateEndDate', d);
+                        clearErrors('estimateEndDate');
                       }}
+                      readOnly={!isAdmin}
                       requiredField
                       minDate={
-                        actualStartTime ? actualStartTime : projectStartDate
+                        estimateStartTime ? estimateStartTime : projectStartDate
                       }
                       maxDate={projectEndDate}
                     />
                     <Input
-                      id="actualHour"
-                      label="Actual Hour"
-                      placeholder="Assigned Employee"
+                      id="estimateHour"
+                      label="Estimate Hour"
+                      placeholder="Estimate Hour"
                       readOnly
                       requiredField
                     />
-                  </>
-                )}
+                    {editForm && (
+                      <>
+                        <ReactSelect
+                          id="status"
+                          label="Select Status"
+                          optionsObject={statusList}
+                          requiredField
+                        />
 
-                <ReactSelect
-                  id="reviewer"
-                  label="Reviewer"
-                  optionsObject={employeeList}
-                  placeholder="Select Reviewer"
-                  disabled={!isAdmin}
-                  requiredField
-                />
+                        <DateTimePicker
+                          id="actualStartDate"
+                          label="Actual Start Date"
+                          placeholder="YYYY-MM-DD h:mm"
+                          onChange={(d: Date) => {
+                            setActualStartTime(d);
+                            setValue('actualStartDate', d);
+                            clearErrors('actualStartDate');
+                            clearErrors('actualEndDate');
+                          }}
+                          minDate={projectStartDate}
+                          maxDate={projectEndDate}
+                          requiredField
+                        />
+                        <DateTimePicker
+                          id="actualEndDate"
+                          label="Actual End Date"
+                          placeholder="YYYY-MM-DD h:mm"
+                          onChange={(d: Date) => {
+                            setActualEndTime(d);
+                            setValue('actualEndDate', d);
+                            clearErrors('actualEndDate');
+                          }}
+                          requiredField
+                          minDate={
+                            actualStartTime ? actualStartTime : projectStartDate
+                          }
+                          maxDate={projectEndDate}
+                        />
+                        <Input
+                          id="actualHour"
+                          label="Actual Hour"
+                          placeholder="Assigned Employee"
+                          readOnly
+                          requiredField
+                        />
+                        <Input
+                          id="assignedEmployeePercent"
+                          label="Assigned Employee Percent"
+                          type="number"
+                          placeholder="Percent"
+                          readOnly={!isAdmin}
+                          requiredField
+                        />
+                      </>
+                    )}
+                  </div>
 
-                <DateTimePicker
-                  id="reviewEstimateStartDate"
-                  label="Review Estimate Start Date"
-                  placeholder="YYYY-MM-DD h:mm"
-                  onChange={(d: Date) => {
-                    setReviewEstimateStartTime(d);
-                    setValue('reviewEstimateStartDate', d);
-                    clearErrors('reviewEstimateStartDate');
-                    clearErrors('reviewEstimateEndDate');
-                  }}
-                  readOnly={!isAdmin}
-                  minDate={projectStartDate}
-                  maxDate={projectEndDate}
-                  requiredField
-                />
-                <DateTimePicker
-                  id="reviewEstimateEndDate"
-                  label="Review Estimate End Date"
-                  placeholder="YYYY-MM-DD h:mm"
-                  onChange={(d: Date) => {
-                    setReviewEstimateEndTime(d);
-                    setValue('reviewEstimateEndDate', d);
-                    clearErrors('reviewEstimateEndDate');
-                  }}
-                  readOnly={!isAdmin}
-                  requiredField
-                  minDate={
-                    reviewEstimateStartTime
-                      ? reviewEstimateStartTime
-                      : projectStartDate
-                  }
-                  maxDate={projectEndDate}
-                />
-                <Input
-                  id="reviewEstimateHour"
-                  label="Review Estimate Hour"
-                  placeholder="Review Estimate Hour"
-                  readOnly
-                  requiredField
-                />
+                  <div className='mt-5'>
+                    <ReactSelect
+                      id="reviewer"
+                      label="Reviewer"
+                      optionsObject={employeeList}
+                      placeholder="Select Reviewer"
+                      disabled={!isAdmin}
+                      requiredField
+                    />
 
-                {editForm && (
-                  <>
                     <DateTimePicker
-                      id="reviewActualStartDate"
-                      label="Review Actual Start Date"
+                      id="reviewEstimateStartDate"
+                      label="Review Estimate Start Date"
                       placeholder="YYYY-MM-DD h:mm"
                       onChange={(d: Date) => {
-                        setReviewActualStartTime(d);
-                        setValue('reviewActualStartDate', d);
-                        clearErrors('reviewActualStartDate');
-                        clearErrors('reviewActualEndDate');
+                        setReviewEstimateStartTime(d);
+                        setValue('reviewEstimateStartDate', d);
+                        clearErrors('reviewEstimateStartDate');
+                        clearErrors('reviewEstimateEndDate');
                       }}
-                      minDate={projectStartDate}
+                      readOnly={!isAdmin}
+                      minDate={estimateEndTime}
                       maxDate={projectEndDate}
                       requiredField
                     />
                     <DateTimePicker
-                      id="reviewActualEndDate"
-                      label="Review Actual End Date"
+                      id="reviewEstimateEndDate"
+                      label="Review Estimate End Date"
                       placeholder="YYYY-MM-DD h:mm"
                       onChange={(d: Date) => {
-                        setReviewActualEndTime(d);
-                        setValue('reviewActualEndDate', d);
-                        clearErrors('reviewActualEndDate');
+                        setReviewEstimateEndTime(d);
+                        setValue('reviewEstimateEndDate', d);
+                        clearErrors('reviewEstimateEndDate');
                       }}
+                      readOnly={!isAdmin}
                       requiredField
                       minDate={
-                        reviewActualStartTime
-                          ? reviewActualStartTime
+                        reviewEstimateStartTime
+                          ? reviewEstimateStartTime
                           : projectStartDate
                       }
                       maxDate={projectEndDate}
                     />
                     <Input
-                      id="reviewActualHour"
-                      label="Review Actual Hour"
-                      placeholder="Reviewer"
+                      id="reviewEstimateHour"
+                      label="Review Estimate Hour"
+                      placeholder="Review Estimate Hour"
                       readOnly
                       requiredField
                     />
-                  </>
-                )}
+
+                    {editForm && (
+                      <>
+                        <DateTimePicker
+                          id="reviewActualStartDate"
+                          label="Review Actual Start Date"
+                          placeholder="YYYY-MM-DD h:mm"
+                          onChange={(d: Date) => {
+                            setReviewActualStartTime(d);
+                            setValue('reviewActualStartDate', d);
+                            clearErrors('reviewActualStartDate');
+                            clearErrors('reviewActualEndDate');
+                          }}
+                          minDate={estimateEndTime}
+                          maxDate={projectEndDate}
+                          requiredField
+                        />
+                        <DateTimePicker
+                          id="reviewActualEndDate"
+                          label="Review Actual End Date"
+                          placeholder="YYYY-MM-DD h:mm"
+                          onChange={(d: Date) => {
+                            setReviewActualEndTime(d);
+                            setValue('reviewActualEndDate', d);
+                            clearErrors('reviewActualEndDate');
+                          }}
+                          requiredField
+                          minDate={
+                            reviewActualStartTime
+                              ? reviewActualStartTime
+                              : estimateEndTime
+                          }
+                          maxDate={projectEndDate}
+                        />
+                        <Input
+                          id="reviewActualHour"
+                          label="Review Actual Hour"
+                          placeholder="Reviewer"
+                          readOnly
+                          requiredField
+                        />
+                        <Input
+                          id="reviewerPercent"
+                          label="Reviewer Percent"
+                          placeholder="Percent"
+                          readOnly={!isAdmin}
+                          type="number"
+                          requiredField
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex justify-between mt-10">
                   <Button
