@@ -27,6 +27,7 @@ const adminNav = [
 
 const userNav = [
   { name: 'Task', href: '/task/list' },
+  { name: 'Project', href: '/project/list' },
   { name: 'Report', href: '/report/list' },
 ];
 

@@ -19,7 +19,6 @@ import Layout from '@/components/Layout';
 import { NextPageWithLayout } from '../_app';
 import { useSession } from 'next-auth/react';
 import { POSITION_ADMIN, TASK_STATUS_CLOSE } from '@/lib/constants';
-import AccessDeniedPage from '@/components/AccessDeniedPage';
 import InAppPagination from '@/components/InAppPagination';
 import ProjectSearchBox from '@/components/ProjectSearchBox';
 import { getFormattedCurrentDate } from '@/lib/format';
@@ -29,6 +28,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const ProjectList: NextPageWithLayout = () => {
   // Session
   const { data: session } = useSession();
+  const userId = session?.user?.id;
   const isAdmin = session?.user?.position === POSITION_ADMIN ? true : false;
   const currentDate = getFormattedCurrentDate();
   // Router
@@ -36,13 +36,17 @@ const ProjectList: NextPageWithLayout = () => {
   const query = router?.query;
   const limit = parseInt((query.limit as string) ?? '5');
 
-  const { data, error, mutate } = useSWR('/api/projects', fetcher);
+  const { data, error, mutate } = useSWR(
+    isAdmin ? '/api/projects' : `/api/employees/${userId}/projects/`,
+    fetcher
+  );
   const [filterList, setFilterList] = useState<Project[]>([]);
   const [displayList, setDisplayList] = useState<Project[]>([]);
   const [page, setPage] = useState(
     parseInt(query.page ? (query.page as string) : '1')
   );
   const [searchKW, setSearchKW] = useState('');
+  console.log('data', displayList.length, data);
 
   // Dialog Modal
   const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false);
@@ -155,7 +159,7 @@ const ProjectList: NextPageWithLayout = () => {
       // eslint-disable-next-line no-magic-numbers
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
-      const newList = dataList?.slice(startIndex, endIndex);
+      const newList = dataList ? dataList?.slice(startIndex, endIndex) : [];
       setDisplayList(newList);
     },
     [limit]
@@ -184,9 +188,9 @@ const ProjectList: NextPageWithLayout = () => {
   if (!data) {
     return <LoadingSpinner />;
   }
-  if (session && !isAdmin) {
-    return <AccessDeniedPage />;
-  }
+  // if (session && !isAdmin) {
+  //   return <AccessDeniedPage />;
+  // }
 
   return (
     <>
@@ -232,7 +236,7 @@ const ProjectList: NextPageWithLayout = () => {
                         <Tableheader>Description</Tableheader>
                         <Tableheader>Start Date</Tableheader>
                         <Tableheader>End Date</Tableheader>
-                        {isAdmin && <Tableheader>Action</Tableheader>}
+                        <Tableheader>Action</Tableheader>
                       </tr>
                     </TableHead>
                     <tbody>
@@ -259,32 +263,35 @@ const ProjectList: NextPageWithLayout = () => {
                               {moment(p.endDate).format('YYYY-MM-DD')}
                             </div>
                           </TableCell>
-                          {isAdmin && (
-                            <TableCell>
-                              <div className="w-36 min-w-full">
-                                <Link
-                                  href={`/project/${p.id}`}
-                                  className="font-medium text-blue-50 mr-4 hover:underline hover:text-blue-100"
-                                >
-                                  Detail
-                                </Link>
-                                <Link
-                                  href={`/project/${p.id}/edit`}
-                                  className="font-medium text-green-600  hover:underline hover:text-green-800"
-                                >
-                                  Edit
-                                </Link>
-                                <button
-                                  type="button"
-                                  // eslint-disable-next-line react/jsx-no-bind
-                                  onClick={() => onDeleteProjectClick(p)}
-                                  className="font-medium text-red-500 ms-4 hover:underline hover:text-red-700"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </TableCell>
-                          )}
+
+                          <TableCell>
+                            <div className="w-36 min-w-full">
+                              <Link
+                                href={`/project/${p.id}`}
+                                className="font-medium text-blue-50 mr-4 hover:underline hover:text-blue-100"
+                              >
+                                Detail
+                              </Link>
+                              {isAdmin && (
+                                <>
+                                  <Link
+                                    href={`/project/${p.id}/edit`}
+                                    className="font-medium text-green-600  hover:underline hover:text-green-800"
+                                  >
+                                    Edit
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    // eslint-disable-next-line react/jsx-no-bind
+                                    onClick={() => onDeleteProjectClick(p)}
+                                    className="font-medium text-red-500 ms-4 hover:underline hover:text-red-700"
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </tbody>

@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { countWeekdays, getMonthRange } from '@/lib/dateFilter/dateFunction';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useSession } from 'next-auth/react';
+import { POSITION_ADMIN } from '@/lib/constants';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -28,6 +30,8 @@ const STATUS_LIST = [
 ] as ReactSelectOption[];
 
 const ProjectDetail: NextPageWithLayout = () => {
+  // Session
+  const { data: session } = useSession();
   // Router
   const router = useRouter();
   const id = router.query.id;
@@ -42,8 +46,6 @@ const ProjectDetail: NextPageWithLayout = () => {
   const [isCheckedAll, setIsCheckedAll] = useState(true);
 
   const { data } = useSWR(`/api/projects/${id}/task`, fetcher);
-
-  console.log('data', data);
 
   const { data: holidays } = useSWR(
     'https://www.googleapis.com/calendar/v3/calendars/en.mm%23holiday%40group.v.calendar.google.com/events?key=AIzaSyCeioYHj-bOmAOVx80T8rQC-B5CY9Lt9qs',
@@ -149,29 +151,15 @@ const ProjectDetail: NextPageWithLayout = () => {
       );
       const diff = endOfMonth.diff(date, 'day');
       date.add(diff, 'day');
-      if (isChecked) {
-        headArr.push(
-          <th
-            key={`header-by-month${date.toISOString()}`}
-            className="border bg-blue-50 h-[33px] min-h-[33px]"
-            colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
-          >
-            {moment(date).format('YYYY-MM')}
-          </th>
-        );
-      } else {
-        if (date.isoWeekday() <= 5) {
-          headArr.push(
-            <th
-              key={`header-by-month${date.toISOString()}`}
-              className="border bg-blue-50 h-[33px] min-h-[33px]"
-              colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
-            >
-              {moment(date).format('YYYY-MM')}
-            </th>
-          );
-        }
-      }
+      headArr.push(
+        <th
+          key={`header-by-month${date.toISOString()}`}
+          className="border bg-blue-50 h-[33px] min-h-[33px]"
+          colSpan={isChecked ? diff + 1 : subEndDateFromStartDate}
+        >
+          {moment(date).format('YYYY-MM')}
+        </th>
+      );
     }
 
     return headArr;
@@ -268,7 +256,7 @@ const ProjectDetail: NextPageWithLayout = () => {
               : date.format('YYYY-MM-DD') <= moment().format('YYYY-MM-DD'))
               ? date.format('YYYY-MM-DD') >
                   momentFormat(cell.estimateEndDate) &&
-                  momentFormat(cell.actualEndDate) >
+                momentFormat(cell.actualEndDate) >
                   momentFormat(cell.estimateEndDate)
                 ? 'bg-[#e06666]' // OverDue
                 : 'bg-[#00FF00]' // Progress
@@ -287,18 +275,22 @@ const ProjectDetail: NextPageWithLayout = () => {
 
       if (isChecked) {
         headArr.push(
-          <>
-            <th
-              key={`header-by-day${date.toISOString()}`}
-              className={classNames(
-                'border h-[23px] min-h-[23px]',
-                weekend,
-                overDueAndProgress,
-                deadlineAndPlan,
-                holidayTest
-              )}
-            ></th>
-          </>
+          <button data-tooltip-target="tooltip-default" type="button">
+            <div id="tooltip-default" role="tooltip" className="absolute z-1 invisible inline-block px-3 py-2 text-sm font-medium text-primary transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip">
+              <th
+                key={`header-by-day${date.toISOString()}`}
+                className={classNames(
+                  'border h-[23px] min-h-[23px]',
+                  weekend,
+                  overDueAndProgress,
+                  deadlineAndPlan,
+                  holidayTest
+                )}
+              >
+              </th>
+                  Tooltip
+            </div>
+          </button>
         );
       } else {
         if (date.isoWeekday() <= 5) {
@@ -611,15 +603,6 @@ const ProjectDetail: NextPageWithLayout = () => {
               <div>Weekend</div>
               <div className="order mx-4  w-6 h-6 border-2 border-black bg-primary"></div>
               <div>Today</div>
-              <div className="group flex relative">
-                <span className="bg-red-400 text-white px-2 py-1">Button</span>
-                <span
-                  className="group-hover:opacity-100 transition-opacity bg-gray-800 px-1 text-sm text-gray-100 rounded-md absolute left-1/2 
-    -translate-x-1/2 translate-y-full opacity-0 m-4 mx-auto"
-                >
-                  Tooltip
-                </span>
-              </div>
             </div>
             <div className="relative">
               <div className="overflow-x-auto">
@@ -717,7 +700,10 @@ const ProjectDetail: NextPageWithLayout = () => {
                                 {t.actualHour}
                               </td>
                               <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[86px] min-h-[86px]">
-                                {t.assignedEmployeePercent ? t.assignedEmployeePercent : 0}%
+                                {t.assignedEmployeePercent
+                                  ? t.assignedEmployeePercent
+                                  : 0}
+                              %
                               </td>
                               <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[86px] min-h-[86px]">
                                 {moment(t.estimateStartDate).format('YYYY-MM-DD')}
@@ -855,7 +841,10 @@ const ProjectDetail: NextPageWithLayout = () => {
                         {displayList?.map((t: TaskByProject) => (
                           <React.Fragment key={t.id}>
                             <tr
-                              onClick={() => router.push(`/task/${t.id}/edit`)}
+                              onClick={() =>
+                                t.employeeId === session?.user?.id
+                                  && router.push(`/task/${t.id}/edit`)
+                              }
                               className="bg-gray-300 hover:bg-primary"
                             >
                               <td
@@ -903,7 +892,10 @@ const ProjectDetail: NextPageWithLayout = () => {
                                 {t.actualHour}
                               </td>
                               <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[86px] min-h-[86px]">
-                                {t.assignedEmployeePercent ? t.assignedEmployeePercent : 0}%
+                                {t.assignedEmployeePercent
+                                  ? t.assignedEmployeePercent
+                                  : 0}
+                              %
                               </td>
                               <td className="text-center border-r border-b w-[100px] min-w-[100px] h-[86px] min-h-[86px]">
                                 {moment(t.estimateStartDate).format('YYYY-MM-DD')}
@@ -929,14 +921,15 @@ const ProjectDetail: NextPageWithLayout = () => {
                               </td>
                             </tr>
 
-                            <tr className='bg-gray-300 hover:bg-primary'>
+                            <tr className='bg-gray-300'>
                               <td
                                 className="text-center border-r border-b w-[8px] min-w-[80px] h-[86px] min-h-[86px]"
                                 colSpan={2}
                               >
                                 {t.reviewName?.length >= 5
                                   ? t.reviewName.slice(0, 5) + '...'
-                                  : t.reviewName} (Reviewer)
+                                  : t.reviewName}{' '}
+                              (Reviewer)
                               </td>
                               <td className="text-center border-r border-b w-[80px] min-w-[80px] h-[86px] min-h-[86px]">
                                 {t.reviewEstimateHour}

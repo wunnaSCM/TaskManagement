@@ -62,7 +62,7 @@ export default function ProjectAddEditForm({
     // Change Date Format
     data.startDate = moment(data.startDate).format('yyyy-MM-DD');
     data.endDate = moment(data.endDate).format('yyyy-MM-DD');
-    const result = data?.type?.map((item) => {
+    const result = data?.type.map((item) => {
       return item.value;
     });
     data.type = result?.toString();

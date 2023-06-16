@@ -702,7 +702,6 @@ export default function TaskAddEditForm({ editForm }: { editForm?: boolean }) {
                           id="reviewerPercent"
                           label="Reviewer Percent"
                           placeholder="Percent"
-                          readOnly={!isAdmin}
                           type="number"
                           requiredField
                         />

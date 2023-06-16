@@ -346,3 +346,33 @@ export async function getAllTaskIdAndEmployee() {
     .from('tasks');
   return employees;
 }
+
+export async function getTaskByEmployeeId(
+  EmployeeId: number,
+  ReviewerId: number,
+) {
+  try {
+    const response = await Knex('tasks')
+      .where({
+        assignedEmployee: EmployeeId,
+      })
+      .orWhere({ reviewer: ReviewerId })
+      .join('projects', 'tasks.project', '=', 'projects.id')
+      .distinct('projects.id')
+      .select(
+        'projects.id AS id',
+        'projects.name AS name',
+        'projects.description',
+        'projects.language',
+        'projects.type',
+        'projects.start_date AS startDate',
+        'projects.end_date AS endDate',
+      )
+      .from('tasks');
+
+    console.log('response', response);
+    return response;
+  } catch (e) {
+    return 0;
+  }
+}
